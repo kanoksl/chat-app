@@ -45,7 +45,7 @@ namespace ChatServer
 
                     if (readData != null)
                     {
-                        Console.WriteLine("Client '" + clientId + "' sent: " + readData);
+                        Console.WriteLine(" > Client '" + clientId + "' sent: " + readData);
 
                         // Broadcast the message to other clients.
                         ServerProgram.Broadcast(readData, clientId, true);
