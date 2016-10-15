@@ -35,6 +35,8 @@
             this.tbxMessage = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.tbxServerAddress = new System.Windows.Forms.TextBox();
+            this.btnDisconnect = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // listChat
@@ -43,9 +45,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listChat.FormattingEnabled = true;
-            this.listChat.Location = new System.Drawing.Point(12, 51);
+            this.listChat.Location = new System.Drawing.Point(12, 77);
             this.listChat.Name = "listChat";
-            this.listChat.Size = new System.Drawing.Size(440, 511);
+            this.listChat.Size = new System.Drawing.Size(440, 485);
             this.listChat.TabIndex = 0;
             // 
             // btnConnect
@@ -100,16 +102,39 @@
             // 
             // tbxServerAddress
             // 
-            this.tbxServerAddress.Location = new System.Drawing.Point(12, 13);
+            this.tbxServerAddress.Location = new System.Drawing.Point(252, 43);
             this.tbxServerAddress.Name = "tbxServerAddress";
             this.tbxServerAddress.Size = new System.Drawing.Size(119, 22);
             this.tbxServerAddress.TabIndex = 6;
+            // 
+            // btnDisconnect
+            // 
+            this.btnDisconnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnDisconnect.Location = new System.Drawing.Point(377, 42);
+            this.btnDisconnect.Name = "btnDisconnect";
+            this.btnDisconnect.Size = new System.Drawing.Size(75, 24);
+            this.btnDisconnect.TabIndex = 7;
+            this.btnDisconnect.Text = "Disconnect";
+            this.btnDisconnect.UseVisualStyleBackColor = true;
+            this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(205, 48);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(41, 13);
+            this.label2.TabIndex = 8;
+            this.label2.Text = "Server:";
             // 
             // ChatWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(464, 601);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.btnDisconnect);
             this.Controls.Add(this.tbxServerAddress);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.tbxMessage);
@@ -135,6 +160,8 @@
         private System.Windows.Forms.TextBox tbxMessage;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox tbxServerAddress;
+        private System.Windows.Forms.Button btnDisconnect;
+        private System.Windows.Forms.Label label2;
     }
 }
 
