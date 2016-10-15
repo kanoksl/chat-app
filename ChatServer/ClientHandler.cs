@@ -30,6 +30,7 @@ namespace ChatServer
         public void StartThread()
         {
             thread = new Thread(DoChat);
+            thread.Name = "ClientHandler for '" + clientId + "'";
             thread.Start();
         }
 

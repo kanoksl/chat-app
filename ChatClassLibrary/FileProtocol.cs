@@ -21,26 +21,61 @@ namespace ChatClassLibrary
         /// </summary>
         public static int FtpBufferSize => 8192;
 
+        /// <summary>
+        /// Text encoding for all file-transfer-related operations.
+        /// </summary>
+        public static Encoding TextEncoding => Encoding.UTF8;
+
+        //--------------------------------------------------------------------------------------//
 
         public static bool SendFile(string filePath, IPEndPoint receiverEP,
             IProgress<double> progress = null)
         {
-            TcpClient receiverSocket = null;
+            TcpClient receiverSocket = new TcpClient();
             NetworkStream receiverStream = null;
 
             try
             {
                 _Log("Connecting to receiver at {0}", receiverEP);
 
-                receiverSocket = new TcpClient(receiverEP);
+                receiverSocket.Connect(receiverEP);
                 receiverStream = receiverSocket.GetStream();
-
-                progress.Report(0);  // Starting transfer; 0% complete.
 
                 FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
                 int packetCount = (int) Math.Ceiling((double) fileStream.Length / FtpBufferSize);
                 long fileLength = fileStream.Length;
                 long bytesSent = 0;
+
+                // Step 1: Send the information about the file as the first packet.
+
+                byte[] fileName = new byte[256];  // Max file name length = 255 bytes.
+                TextEncoding.GetBytes(Path.GetFileName(filePath)).CopyTo(fileName, 0);
+                byte[] fileSize = Utility.LongToBytes(fileLength);  // 8 bytes.
+                byte[] fileHash = Utility.CalculateMD5(filePath);  // 16 bytes.
+                byte[] firstPacket = Utility.Concat(fileName, fileSize, fileHash); // 280 bytes.
+
+                _Log("Sending the file information packet...");
+                _Log(" FileName = " + Path.GetFileName(filePath));
+                _Log(" FileSize = {0} bytes", fileLength);
+                _Log(" FileHash = " + Utility.ToHashString(fileHash));
+
+                receiverStream.Write(firstPacket, 0, firstPacket.Length);
+
+                // Step 2: Receive the confirmation from the receiver.
+
+                byte[] response = new byte[256];
+                receiverStream.Read(response, 0, response.Length);
+                bool receiverAccept = response[0] == 1;
+                if (!receiverAccept)
+                {
+                    string message = TextEncoding.GetString(response, 1, response.Length - 1);
+                    _Log("Receiver rejected file transfer request. Reason: " + message);
+                    return false;
+                }
+
+                // Step 3: Start the actual file transfer.
+
+                progress?.Report(0);  // 0% complete.
 
                 _Log("Sending a file of length = {0} bytes ({1} packets)", fileLength, packetCount);
                 _Log(" ({0})", filePath);
@@ -61,8 +96,7 @@ namespace ChatClassLibrary
                 }
 
                 progress?.Report(100);  // Finished transfer; 100% complete.
-
-                _Log("Finished sendign {0} bytes ({1} packets)", fileLength, packetCount);
+                _Log("Finished sending {0} bytes ({1} packets)", fileLength, packetCount);
 
                 fileStream.Close();
 
@@ -80,15 +114,79 @@ namespace ChatClassLibrary
             }
         }
 
-        public static bool ReceiveFile(IPEndPoint receiverEP,
+        public static bool ReceiveFile(TcpListener listenerSocket,
             IProgress<double> progress = null)
         {
-            TcpListener listenerSocket = new TcpListener(receiverEP);
-            listenerSocket.Start();
+            TcpClient senderSocket = listenerSocket.AcceptTcpClient();
+            NetworkStream stream = senderSocket.GetStream();
 
-            // TODO: receive file
+            // Step 1: Receive information about the file.
+            byte[] fileInfo = new byte[280];
+            stream.Read(fileInfo, 0, fileInfo.Length);
+            string fileName = TextEncoding.GetString(fileInfo, 0, 256).Trim('\0');
+            long fileLength = Utility.BytesToLong(Utility.Slice(fileInfo, 256, 8));
+            byte[] fileHash = Utility.Slice(fileInfo, 264, 16);
 
-            return false;
+            _Log("Received a file information packet");
+            _Log(" FileName = " + fileName);
+            _Log(" FileSize = {0} bytes", fileLength);
+            _Log(" FileHash = " + Utility.ToHashString(fileHash));
+
+            // Step 2: Respond whether to accept or reject the file.
+
+            byte[] response = new byte[256];
+            bool accept = true;  // TODO: conditions for rejecting file upload
+
+            if (accept)
+            {
+                response[0] = 1;
+                stream.Write(response, 0, response.Length);
+            }
+            else
+            {
+                response[0] = 0;
+                string message = "I don't want this file.";
+                TextEncoding.GetBytes(message, 0, message.Length, response, 1);
+                stream.Write(response, 0, response.Length);
+
+                return false;
+            }
+
+            // Step 3: Start the actual file transfer.
+
+            progress?.Report(0);  // 0% complete.
+
+            string saveFilePath = @"D:\tmp\ftp\" + fileName;  // TODO: configurable save path
+
+            _Log("Receiving a file of length = {0} bytes", fileLength);
+            _Log(" (Save to {0})", saveFilePath);
+
+            FileStream fileStream = new FileStream(saveFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+            long readLength = 0;
+            int packetCount = 0;
+
+            while (readLength < fileLength)
+            {
+                int bytesToRead = (int) Math.Min(FtpBufferSize, fileLength - readLength);
+                byte[] readBytes = new byte[bytesToRead];
+
+                int bytesRead = stream.Read(readBytes, 0, bytesToRead);
+                fileStream.Write(readBytes, 0, bytesRead);
+
+                readLength += bytesToRead;
+                packetCount += 1;
+
+                progress?.Report((double) readLength / fileLength * 100);
+            }
+
+            progress?.Report(100);  // Finished transfer; 100% complete.
+            _Log("Finished receiving {0} bytes ({1} packets)", fileLength, packetCount);
+
+            fileStream.Close();
+            stream.Close();
+            senderSocket.Close();
+
+            return true;
         }
 
         //--------------------------------------------------------------------------------------//

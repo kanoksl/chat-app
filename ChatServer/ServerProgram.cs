@@ -17,7 +17,7 @@ namespace ChatServer
         public static Hashtable ClientTable = new Hashtable();
 
 
-        public static IPEndPoint SelectLocalIPEndPoint(int port, bool ipv4Only = true)
+        public static IPAddress SelectLocalIPAddress(bool ipv4Only = true)
         {
             string localHostName = Dns.GetHostName();
             IPHostEntry ipHostInfo = Dns.GetHostEntry(localHostName);
@@ -46,16 +46,13 @@ namespace ChatServer
             }
 
             IPAddress ipAddress = ipAddressList[choice];
-            IPEndPoint endPoint = new IPEndPoint(ipAddress, ChatProtocol.ServerListeningPort);
-
-            return endPoint;
+            return ipAddress;
         }
 
         public static void Broadcast(string message, string username = null, bool showName = false)
         {
-            string sendData = showName
-                ? username + ": " + message
-                : message;
+            string sendData = showName ? username + ": " + message
+                                       : message;
 
             TcpClient broadcastSocket = null;
             NetworkStream broadcastStream = null;
@@ -95,18 +92,53 @@ namespace ChatServer
         {
             Console.WriteLine("Initializing server...");
 
-            IPEndPoint localEndPoint = SelectLocalIPEndPoint(ChatProtocol.ServerListeningPort);
-            TcpListener serverSocket = new TcpListener(localEndPoint);
+            IPAddress localAddress = SelectLocalIPAddress();
+            TcpListener serverSocket = new TcpListener(localAddress, ChatProtocol.ServerListeningPort);
             TcpClient clientSocket = null;
 
             serverSocket.Start();
 
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("Server started, using the following IPEndPoint:");
-            Console.WriteLine("  - IP address  = {0}", localEndPoint.Address);
-            Console.WriteLine("  - Port number = {0}", localEndPoint.Port);
+            Console.WriteLine("  - IP address  = {0}", localAddress);
+            Console.WriteLine("  - Port number = {0}", ChatProtocol.ServerListeningPort);
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("Waiting for client...\n");
+
+            // Set up FTP server.
+
+            TcpListener ftpSocket = new TcpListener(localAddress, FileProtocol.FtpListeningPort);
+
+            //var progressReporter = new Progress<double>();
+            //double prevProgress = 0;
+            //progressReporter.ProgressChanged += (s, progress) =>
+            //{
+            //    if (progress - prevProgress >= 10 || progress == 100)
+            //    {
+            //        Console.WriteLine("  > FILE TRANSFER PROGRESS: {0:0.00} % COMPLETED", progress);
+            //        prevProgress = progress;
+            //    }
+            //};
+
+            Thread ftpThread = new Thread(() =>
+            {
+                ftpSocket.Start();
+
+                while (true)
+                {
+                    bool received = FileProtocol.ReceiveFile(ftpSocket);
+                    if (received)
+                    {
+                        Console.WriteLine("File Transfer Finished.");
+                        Broadcast("<someone uploaded a file.");  // TODO: know who the uploader is
+                    }
+                }
+                
+            });
+            ftpThread.Name = "Server FTP Listener Thread";
+            ftpThread.Start();
+
+            // Begin accepting client connection.
 
             while (true)
             {

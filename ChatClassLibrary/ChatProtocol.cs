@@ -25,7 +25,8 @@ namespace ChatClassLibrary
         /// </summary>
         public static Encoding TextEncoding => Encoding.ASCII;
 
-        
+        //--------------------------------------------------------------------------------------//
+
         /// <summary>
         /// Send a basic string message over the given NetworkStream. The data will be sent as 
         /// a byte array with the first 4 bytes specifying the length of message (as Int32), 

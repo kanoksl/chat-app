@@ -33,6 +33,7 @@ namespace ChatClient
             // Initialize GUI data.
             tbxUsername.Text = defaultUsername;
             tbxServerAddress.Text = "127.0.0.1";
+            tbxFilePath.Text = @"D:\downloaded_big file.pdf";
 
             UpdateGui(GuiUpdateEvent.CanStartConnection);
         }
@@ -55,6 +56,7 @@ namespace ChatClient
 
                 keepListening = true;
                 listenerThread = new Thread(ListenToServer);
+                listenerThread.Name = "Server Listener";
                 listenerThread.Start();
 
                 return true;
@@ -179,6 +181,7 @@ namespace ChatClient
                 DisplayMessage(success ? "<file upload completed>"
                                        : "<FILE UPLOAD FAILED>");
             });
+            ftpThread.Name = "FTP Upload Thread";
             ftpThread.Start();
         }
 
