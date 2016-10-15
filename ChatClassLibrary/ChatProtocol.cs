@@ -26,30 +26,6 @@ namespace ChatClassLibrary
         public static Encoding TextEncoding => Encoding.ASCII;
 
         
-        private static byte[] IntToBytes(int value)
-        {
-            byte[] bytes = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            return bytes;
-        }
-
-        private static int BytesToInt(byte[] bytes)
-        {
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            int value = BitConverter.ToInt32(bytes, 0);
-            return value;
-        }
-
-        private static T[] Concat<T>(T[] x, T[] y)
-        {
-            var z = new T[x.Length + y.Length];
-            x.CopyTo(z, 0);
-            y.CopyTo(z, x.Length);
-            return z;
-        }
-
         /// <summary>
         /// Send a basic string message over the given NetworkStream. The data will be sent as 
         /// a byte array with the first 4 bytes specifying the length of message (as Int32), 
@@ -60,14 +36,14 @@ namespace ChatClassLibrary
         public static void SendMessage(string message, NetworkStream stream)
         {
             int length = message.Length;
-            byte[] prefix = IntToBytes(length);
+            byte[] prefix = Utility.IntToBytes(length);
             byte[] data = TextEncoding.GetBytes(message);
 
             _Log("Sending string message of length = {0}", length);
             _Log(" |- prefix length = {0} bytes", prefix.Length);
             _Log(" |- data length = {0} bytes", data.Length);
 
-            byte[] sendBytes = Concat(prefix, data);
+            byte[] sendBytes = Utility.Concat(prefix, data);
             stream.Write(sendBytes, 0, sendBytes.Length);
             stream.Flush();
 
@@ -88,7 +64,7 @@ namespace ChatClassLibrary
 
                 byte[] prefix = new byte[4];
                 stream.Read(prefix, 0, 4);
-                int dataLength = BytesToInt(prefix);
+                int dataLength = Utility.BytesToInt(prefix);
 
                 if (dataLength == 0)
                 {
@@ -123,6 +99,7 @@ namespace ChatClassLibrary
             }
         }
 
+        //--------------------------------------------------------------------------------------//
 
         private static void _Log(string message, params object[] args)
         {

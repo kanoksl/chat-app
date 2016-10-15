@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -146,6 +147,40 @@ namespace ChatClient
                 e.Handled = true;
             }
         }
+        private void btnFileBrowse_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Title = "Choose a file to upload";
+            dialog.Filter = "All Files (*.*)|*.*";
+            dialog.CheckFileExists = true;
+            dialog.InitialDirectory = @"D:\";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                tbxFilePath.Text = dialog.FileName;
+            }
+        }
+
+        private void btnUploadFile_Click(object sender, EventArgs e)
+        {
+            var progressReporter = new Progress<double>();
+            progressReporter.ProgressChanged += (s, progress) =>
+            {
+                pgbUploadProgress.Value = (int) progress;
+            };
+
+            string filePath = tbxFilePath.Text.Trim();
+            IPEndPoint serverEP = new IPEndPoint(
+                IPAddress.Parse(tbxServerAddress.Text),
+                FileProtocol.FtpListeningPort);
+
+            Thread ftpThread = new Thread(() =>
+            {
+                bool success = FileProtocol.SendFile(filePath, serverEP, progressReporter);
+                DisplayMessage(success ? "<file upload completed>"
+                                       : "<FILE UPLOAD FAILED>");
+            });
+            ftpThread.Start();
+        }
 
         //--------------------------------------------------------------------------------------//
 
@@ -187,12 +222,14 @@ namespace ChatClient
                     tbxUsername.Enabled = true;
                     btnConnect.Enabled = true;
                     btnDisconnect.Enabled = false;
+                    btnUploadFile.Enabled = false;
                     break;
                 case GuiUpdateEvent.ConnectionSuccessful:
                     tbxServerAddress.Enabled = false;
                     tbxUsername.Enabled = false;
                     btnConnect.Enabled = false;
                     btnDisconnect.Enabled = true;
+                    btnUploadFile.Enabled = true;
                     break;
                 default:
                     break;
