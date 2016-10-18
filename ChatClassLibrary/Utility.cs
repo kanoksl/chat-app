@@ -100,6 +100,15 @@ namespace ChatClassLibrary
             return z;
         }
 
+        /// <summary>
+        /// Make a sub-array (slice) of some length starting at specified index.
+        /// (The source array is not modified).
+        /// </summary>
+        /// <typeparam name="T">Can be any type.</typeparam>
+        /// <param name="source">The source array.</param>
+        /// <param name="index">Starting index of the slice.</param>
+        /// <param name="length">Length of the slice.</param>
+        /// <returns>An array of type T[].</returns>
         public static T[] Slice<T>(T[] source, int index, int length)
         {
             var slice = new T[length];
@@ -130,7 +139,12 @@ namespace ChatClassLibrary
         /// <returns>A byte array of length 16 containing the hash.</returns>
         public static byte[] CalculateMD5(string filePath)
         {
-            return CalculateMD5(File.OpenRead(filePath));
+            using (var stream = File.OpenRead(filePath))
+            using (var hasher = MD5.Create())
+            {
+                byte[] hash = hasher.ComputeHash(stream);
+                return hash;
+            }
         }
 
         /// <summary>
@@ -144,5 +158,25 @@ namespace ChatClassLibrary
         }
 
         //--------------------------------------------------------------------------------------//
+
+        /// <summary>
+        /// Generate a new GUID.
+        /// </summary>
+        /// <returns>A byte array of length 16 containing the GUID value.</returns>
+        public static byte[] NewGuid()
+        {
+            return Guid.NewGuid().ToByteArray();
+        }
+
+        /// <summary>
+        /// Convert a byte-array GUID to standard-looking string.
+        /// </summary>
+        /// <param name="guid">A 16-byte GUID array.</param>
+        /// <returns>The string representation of the GUID.</returns>
+        public static string ToGuidString(byte[] guid)
+        {
+            var g = new Guid(guid);
+            return g.ToString();
+        }
     }
 }

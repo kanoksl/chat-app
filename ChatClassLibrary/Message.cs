@@ -26,10 +26,11 @@ namespace ChatClassLibrary
 
     public class Message
     {
-        private string text;  // The content of the message.
-        private string senderId;  // The client who send the message.
-        private ControlInfo command;
-        private MessageType type;
+        private string text;  // (variable-length) The content of the message.
+        private string senderId;  // (16-byte GUID) The client who send the message.
+        private string targetId;  // (16-byte GUID) Chatroom that the message is sent to.
+        private ControlInfo command;  // (6-bit) 
+        private MessageType type;  // (2-bit) 
 
         public string Text
         {
@@ -55,6 +56,26 @@ namespace ChatClassLibrary
             set { type = value; }
         }
 
+        //--------------------------------------------------------------------------------------//
+
+        /// <summary>
+        /// Convert a Message object into a byte array (to be sent over a network).
+        /// </summary>
+        /// <returns>A byte array representing the Message object.</returns>
+        public byte[] BuildPacket()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Convert a byte array (read from a network stream) into a Message object.
+        /// </summary>
+        /// <param name="packet">A byte array representing a Message object.</param>
+        /// <returns>A Message object.</returns>
+        public static Message FromPacket(byte[] packet)
+        {
+            throw new NotImplementedException();
+        }
 
     }
 }

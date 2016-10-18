@@ -25,6 +25,7 @@ namespace ChatClient
         private bool keepListening = true;
         private Thread listenerThread = null;
 
+        private bool formClosed = false;
 
         public ChatWindow(string defaultUsername = "user")
         {
@@ -85,6 +86,10 @@ namespace ChatClient
                 try
                 {
                     string message = ChatProtocol.ReadMessage(serverStream);
+                    if (message == null)
+                    {
+                        throw new IOException("null data // server rejected connection");
+                    }
                     DisplayMessage(message);
                 }
                 catch (IOException)
@@ -97,7 +102,8 @@ namespace ChatClient
                     }
                     else
                     {   // Client side closed the connection.
-                        DisplayMessage("<DISCONNECTED>");
+                        if (!this.formClosed)
+                            DisplayMessage("<DISCONNECTED>");
                     }
                     return;
                 }
@@ -183,6 +189,16 @@ namespace ChatClient
             });
             ftpThread.Name = "FTP Upload Thread";
             ftpThread.Start();
+        }
+
+        private void ChatWindow_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.formClosed = true;
+            ResetConnection();
+        }
+
+        private void ChatWindow_FormClosing(object sender, FormClosingEventArgs e)
+        {
         }
 
         //--------------------------------------------------------------------------------------//

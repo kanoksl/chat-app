@@ -186,6 +186,17 @@ namespace ChatClassLibrary
             stream.Close();
             senderSocket.Close();
 
+            // Step 4 (optional): Check the downloaded file's checksum
+
+            byte[] downloadedFileHash = Utility.CalculateMD5(saveFilePath);  // 16 bytes.
+            _Log(" Hash (Downloaded)  = " + Utility.ToHashString(downloadedFileHash));
+            _Log(" Hash (From Sender) = " + Utility.ToHashString(fileHash));
+            // TODO: if hashes differ
+            if (!Enumerable.SequenceEqual(fileHash, downloadedFileHash))
+            {
+                _Log("WARNING: hash differs from original; the downloaded file is damaged.");
+            }
+
             return true;
         }
 
