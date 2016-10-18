@@ -53,7 +53,7 @@ namespace ChatClient
 
                 // First message: request connection with clientId (username)
                 serverStream = clientSocket.GetStream();
-                ChatProtocol.SendMessage(clientId, serverStream);
+                ChatProtocol.SendMessage_old(clientId, serverStream);
 
                 keepListening = true;
                 listenerThread = new Thread(ListenToServer);
@@ -85,7 +85,7 @@ namespace ChatClient
             {
                 try
                 {
-                    string message = ChatProtocol.ReadMessage(serverStream);
+                    string message = ChatProtocol.ReadMessage_old(serverStream);
                     if (message == null)
                     {
                         throw new IOException("null data // server rejected connection");
@@ -135,7 +135,7 @@ namespace ChatClient
 
             if (newMessage.Length > 0)
             {   // Doesn't allow empty message.
-                ChatProtocol.SendMessage(newMessage, serverStream);
+                ChatProtocol.SendMessage_old(newMessage, serverStream);
 
                 tbxMessage.Text = "";
             }

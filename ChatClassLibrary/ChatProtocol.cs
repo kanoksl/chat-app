@@ -34,10 +34,10 @@ namespace ChatClassLibrary
         /// </summary>
         /// <param name="message">String message to be sent.</param>
         /// <param name="stream">NetworkStream to write to.</param>
-        public static void SendMessage(string message, NetworkStream stream)
+        public static void SendMessage_old(string message, NetworkStream stream)
         {
             int length = message.Length;
-            byte[] prefix = Utility.IntToBytes(length);
+            byte[] prefix = Utility.ToByteArray(length);
             byte[] data = TextEncoding.GetBytes(message);
 
             _Log("Sending string message of length = {0}", length);
@@ -57,7 +57,7 @@ namespace ChatClassLibrary
         /// </summary>
         /// <param name="stream">NetworkStream to read from.</param>
         /// <returns>Message as string encoded using protocol's default encoding.</returns>
-        public static string ReadMessage(NetworkStream stream)
+        public static string ReadMessage_old(NetworkStream stream)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace ChatClassLibrary
 
                 byte[] prefix = new byte[4];
                 stream.Read(prefix, 0, 4);
-                int dataLength = Utility.BytesToInt(prefix);
+                int dataLength = Utility.BytesToInt32(prefix);
 
                 if (dataLength == 0)
                 {
@@ -98,6 +98,18 @@ namespace ChatClassLibrary
                 //return "<stream closed>";
                 throw ex;
             }
+        }
+
+        //--------------------------------------------------------------------------------------//
+
+        public static void SendMessage(Message message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Message ReceiveMessage(NetworkStream stream)
+        {
+            throw new NotImplementedException();
         }
 
         //--------------------------------------------------------------------------------------//

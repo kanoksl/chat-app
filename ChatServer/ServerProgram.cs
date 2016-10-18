@@ -64,33 +64,23 @@ namespace ChatServer
                 broadcastSocket = entry.Value.Socket;
                 broadcastStream = broadcastSocket.GetStream();
 
-                ChatProtocol.SendMessage(sendData, broadcastStream);
+                ChatProtocol.SendMessage_old(sendData, broadcastStream);
             }
-
-            //foreach (DictionaryEntry item in ClientTable)
-            //{
-            //    broadcastSocket = (TcpClient) item.Value;
-            //    broadcastStream = broadcastSocket.GetStream();
-
-            //    ChatProtocol.SendMessage(sendData, broadcastStream);
-            //}
         }
 
         private static void DisplayClientList()
         {
             Console.WriteLine("  Connected Clients: {0}", ClientHandlerTable.Count);
             foreach (KeyValuePair<string, ClientHandler> entry in ClientHandlerTable)
+            {
                 Console.WriteLine("   |- {0} (id={1} | name={2})", entry.Value.RemoteEndPoint,
                     entry.Key, entry.Value.DisplayName);
-            //Console.WriteLine("  Connected Clients: {0}", ClientTable.Count);
-            //foreach (DictionaryEntry item in ClientTable)
-            //    Console.WriteLine("   |- {0} ({1})", ((TcpClient) item.Value).Client.RemoteEndPoint, item.Key);
+            }
         }
 
         public static void RemoveClient(string clientId)
         {
             ClientHandlerTable.Remove(clientId);
-            //ClientTable.Remove(clientId);
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("  Removed Client '{0}'", clientId);
             DisplayClientList();
@@ -107,6 +97,8 @@ namespace ChatServer
         {
             Console.WriteLine("Initializing server...");
 
+            // Step 1: Set up messaging server.
+
             IPAddress localAddress = SelectLocalIPAddress();
             TcpListener serverSocket = new TcpListener(localAddress, ChatProtocol.ServerListeningPort);
             TcpClient clientSocket = null;
@@ -120,7 +112,7 @@ namespace ChatServer
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("Waiting for client...\n");
 
-            // Set up FTP server.
+            // Step 2: Set up FTP server.
 
             TcpListener ftpSocket = new TcpListener(localAddress, FileProtocol.FtpListeningPort);
 
@@ -153,16 +145,15 @@ namespace ChatServer
             ftpThread.Name = "Server FTP Listener Thread";
             ftpThread.Start();
 
-            // Begin accepting client connection.
+            // Step 3: Begin accepting client connection.
 
             while (true)
             {
                 clientSocket = serverSocket.AcceptTcpClient();
 
                 NetworkStream networkStream = clientSocket.GetStream();
-                string clientId = ChatProtocol.ReadMessage(networkStream);
-
-                //if (ClientTable.Contains(clientId))
+                string clientId = ChatProtocol.ReadMessage_old(networkStream);
+                
                 if (ClientHandlerTable.ContainsKey(clientId))
                 {   // Duplicate IDs; don't allow connection.
                     Console.WriteLine("  Client [{1}] tried to connect using ID '{0}'. The request was rejected.",
@@ -174,7 +165,6 @@ namespace ChatServer
 
                 if (clientId == "exit") break; // TODO: proper exit condition
 
-                //ClientTable.Add(clientId, clientSocket);
                 ClientHandler clientHandler = new ClientHandler(clientId, clientSocket);
                 ClientHandlerTable.Add(clientId, clientHandler);
                 clientHandler.StartThread();

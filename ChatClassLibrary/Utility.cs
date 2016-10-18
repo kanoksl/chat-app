@@ -15,25 +15,12 @@ namespace ChatClassLibrary
         /// </summary>
         /// <param name="value">Integer value to be converted.</param>
         /// <returns>A byte array of length 4.</returns>
-        public static byte[] IntToBytes(int value)
+        public static byte[] ToByteArray(int value)
         {
             byte[] bytes = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(bytes);
             return bytes;
-        }
-
-        /// <summary>
-        /// Convert the first 4 bytes of an array to a 32-bit integer.
-        /// </summary>
-        /// <param name="bytes">Byte array to convert.</param>
-        /// <returns>A 32-bit integer.</returns>
-        public static int BytesToInt(byte[] bytes)
-        {
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            int value = BitConverter.ToInt32(bytes, 0);
-            return value;
         }
 
         /// <summary>
@@ -41,24 +28,47 @@ namespace ChatClassLibrary
         /// </summary>
         /// <param name="value">Integer value to be converted.</param>
         /// <returns>A byte array of length 8.</returns>
-        public static byte[] LongToBytes(long value)
+        public static byte[] ToByteArray(long value)
         {
             byte[] bytes = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(bytes);
             return bytes;
         }
-
+        
+        /// <summary>
+        /// Convert the first 4 bytes of an array to a 32-bit integer.
+        /// </summary>
+        /// <param name="bytes">Byte array to convert.</param>
+        /// <returns>A 32-bit integer.</returns>
+        public static int BytesToInt32(byte[] bytes, int startIndex = 0)
+        {
+            if (BitConverter.IsLittleEndian)
+            {   // Create a copy of the int bytes and convert to big endian.
+                byte[] newBytes = new byte[4];
+                Array.Copy(bytes, startIndex, newBytes, 0, 4);
+                Array.Reverse(newBytes);
+                bytes = newBytes;
+            }
+            int value = BitConverter.ToInt32(bytes, startIndex);
+            return value;
+        }
+        
         /// <summary>
         /// Convert the first 8 bytes of an array to a 64-bit integer.
         /// </summary>
         /// <param name="bytes">Byte array to convert.</param>
         /// <returns>A 64-bit integer.</returns>
-        public static long BytesToLong(byte[] bytes)
+        public static long BytesToInt64(byte[] bytes, int startIndex = 0)
         {
             if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            long value = BitConverter.ToInt64(bytes, 0);
+            {   // Create a copy of the long bytes and convert to big endian.
+                byte[] newBytes = new byte[8];
+                Array.Copy(bytes, startIndex, newBytes, 0, 8);
+                Array.Reverse(newBytes);
+                bytes = newBytes;
+            }
+            long value = BitConverter.ToInt64(bytes, startIndex);
             return value;
         }
 

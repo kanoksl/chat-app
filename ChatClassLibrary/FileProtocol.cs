@@ -50,7 +50,7 @@ namespace ChatClassLibrary
 
                 byte[] fileName = new byte[256];  // Max file name length = 255 bytes.
                 TextEncoding.GetBytes(Path.GetFileName(filePath)).CopyTo(fileName, 0);
-                byte[] fileSize = Utility.LongToBytes(fileLength);  // 8 bytes.
+                byte[] fileSize = Utility.ToByteArray(fileLength);  // 8 bytes.
                 byte[] fileHash = Utility.CalculateMD5(filePath);  // 16 bytes.
                 byte[] firstPacket = Utility.Concat(fileName, fileSize, fileHash); // 280 bytes.
 
@@ -124,7 +124,7 @@ namespace ChatClassLibrary
             byte[] fileInfo = new byte[280];
             stream.Read(fileInfo, 0, fileInfo.Length);
             string fileName = TextEncoding.GetString(fileInfo, 0, 256).Trim('\0');
-            long fileLength = Utility.BytesToLong(Utility.Slice(fileInfo, 256, 8));
+            long fileLength = Utility.BytesToInt64(Utility.Slice(fileInfo, 256, 8));
             byte[] fileHash = Utility.Slice(fileInfo, 264, 16);
 
             _Log("Received a file information packet");

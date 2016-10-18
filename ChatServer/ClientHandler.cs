@@ -68,7 +68,7 @@ namespace ChatServer
                 {
                     // Read the message the client has sent.
                     NetworkStream networkStream = clientSocket.GetStream();
-                    string readData = ChatProtocol.ReadMessage(networkStream);
+                    string readData = ChatProtocol.ReadMessage_old(networkStream);
 
                     if (readData != null)
                     {
