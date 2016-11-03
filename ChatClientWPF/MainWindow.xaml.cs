@@ -18,27 +18,17 @@ using ChatClassLibrary;
 
 namespace ChatClientWPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MessageClient ClientService { get; set; }
 
         private Dictionary<Guid, ChatWindow> ChatWindows { get; set; }
 
-
-        private ChatWindow publicRoomWindow;
-
         public MainWindow()
         {
             InitializeComponent();
 
             this.ChatWindows = new Dictionary<Guid, ChatWindow>();
-
-            //publicRoomWindow = new ChatWindow(Guid.Empty, this.ClientService);
-            //ChatWindows.Add(Guid.Empty, publicRoomWindow);
-            //publicRoomWindow.ChatroomName = "Public Room";
 
             _UpdateGUI();
         }
@@ -83,7 +73,14 @@ namespace ChatClientWPF
 
         private void ClientService_ClientLeftChatroom(object sender, ChatroomEventArgs e)
         {
-            throw new NotImplementedException();
+            this.Dispatcher.Invoke(() =>
+            {   // Called from different thread.
+                if (ChatWindows.ContainsKey(e.ChatroomId))
+                {
+                    ChatWindows[e.ChatroomId].Close();
+                    ChatWindows.Remove(e.ChatroomId);
+                }
+            });
         }
 
         private void ClientService_ClientJoinedChatroom(object sender, ChatroomEventArgs e)
@@ -97,10 +94,15 @@ namespace ChatClientWPF
                     ChatWindows.Add(e.ChatroomId, newWindow);
                     newWindow.Show();
                 }
-                else
+
+                _DisplayMessage(new Message
                 {
-                    ChatWindows[e.ChatroomId].Show();
-                }
+                    Type = MessageType.Control,
+                    SenderId = Message.NullID,
+                    TargetId = e.ChatroomId,
+                    TimeSent = DateTime.Now,
+                    Text = "You are now a member of this chatroom."
+                });
             });
         }
 
@@ -110,6 +112,9 @@ namespace ChatClientWPF
             {   // Called from different thread.
                 listBox_Users.ItemsSource = null;
                 listBox_Users.ItemsSource = ClientService.KnownClients;
+
+                //foreach (var roomId in ClientService.JoinedChatrooms)
+                //    ChatWindows[roomId].ChatroomName = ClientService.GetChatroomName(roomId);
             });
         }
 
@@ -119,6 +124,9 @@ namespace ChatClientWPF
             {   // Called from different thread.
                 listBox_Chatrooms.ItemsSource = null;
                 listBox_Chatrooms.ItemsSource = ClientService.KnownChatrooms;
+
+                foreach (var roomId in ClientService.JoinedChatrooms)
+                    ChatWindows[roomId].ChatroomName = ClientService.GetChatroomName(roomId);
             });
         }
 
@@ -163,14 +171,6 @@ namespace ChatClientWPF
         private void ClientService_ConnectionEstablished(object sender, ConnectionEventArgs e)
         {
             ClientService.BeginReceive();
-
-            //publicRoomWindow.ClientService = this.ClientService;
-
-            //this.Dispatcher.Invoke(() =>
-            //{   // Called from different thread.
-            //    publicRoomWindow.Show();
-            //});
-
             _UpdateGUI(true);
         }
 
@@ -186,10 +186,10 @@ namespace ChatClientWPF
 
         private void _DisplayMessage(Message message)
         {   // Must display in the correct chatroom.
-            Console.WriteLine(message.ToString());
-
             if (ChatWindows.ContainsKey(message.TargetId))
                 ChatWindows[message.TargetId].DisplayMessage(message);
+            else
+                Console.WriteLine(message.ToString());
         }
 
         private void _UpdateGUI(bool showConnectionLabel = false)
@@ -229,7 +229,31 @@ namespace ChatClientWPF
         {
             if (e.ClickCount >= 2)
             {
-                MessageBox.Show(listBox_Chatrooms.SelectedItem.ToString());
+                //MessageBox.Show(listBox_Chatrooms.SelectedItem.ToString());
+
+                var roomInfo = (MessageClient.ChatroomInfo) listBox_Chatrooms.SelectedItem;
+
+                if (ChatWindows.ContainsKey(roomInfo.ChatroomId))
+                {
+                    ChatWindows[roomInfo.ChatroomId].Visibility = Visibility.Visible;
+                    ChatWindows[roomInfo.ChatroomId].Activate();
+                }
+                else 
+                    ClientService.RequestJoinChatroom(roomInfo.ChatroomId);
+            }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void tbxUsername_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                btnConnect_Click(sender, e);
+                e.Handled = true;
             }
         }
     }

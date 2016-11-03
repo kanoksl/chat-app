@@ -18,9 +18,6 @@ using ChatClassLibrary;
 
 namespace ChatClientWPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class ChatWindow : Window
     {
         public Guid ChatroomId { get; set; }
@@ -51,24 +48,19 @@ namespace ChatClientWPF
 
             this.ChatHistory = new ObservableCollection<MessageLine>();
             listView_Chat.ItemsSource = ChatHistory;
-
-            //List<MessageLine> chatHistory = new List<MessageLine>()
-            //{
-            //    new MessageLine(DateTime.Now, "Dog", "Hello I'm a dog."),
-            //    new MessageLine(DateTime.Now, "Cat", "Hello I'm a cat."),
-            //    new MessageLine(DateTime.Now, "-", "<test message>")
-            //};
-            //listView_Chat.ItemsSource = chatHistory;
         }
 
 
         private Dictionary<Guid, string> clientNamesCache = new Dictionary<Guid, string>();
         public void DisplayMessage(Message message)
         {
+            if (message.Text == null || message.Text == "")
+                return;
+
             Guid senderId = message.SenderId;
             string senderName = "-";
 
-            if (senderId == Message.NullID)
+            if (senderId == Message.NullID || message.Type == MessageType.Control)
                 senderName = "<SERVER>";
             else if (senderId == ClientService.ClientId)
                 senderName = "<YOU>";
@@ -89,6 +81,9 @@ namespace ChatClientWPF
             this.Dispatcher.Invoke(() =>
             {   // Called from different thread.
                 ChatHistory.Add(new MessageLine(message.TimeSent, senderName, message.Text));
+
+                listView_Chat.SelectedIndex = ChatHistory.Count - 1;
+                listView_Chat.ScrollIntoView(listView_Chat.SelectedItem);
             });
         }
 
@@ -121,6 +116,17 @@ namespace ChatClientWPF
                 btnChatSend_Click(sender, e);
                 e.Handled = true;
             }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            e.Cancel = true;
+            this.Visibility = Visibility.Hidden;
+        }
+
+        private void btnLeaveChatroom_Click(object sender, RoutedEventArgs e)
+        {
+            ClientService?.RequestLeaveChatroom(this.ChatroomId);
         }
     }
 }

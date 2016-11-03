@@ -48,7 +48,8 @@ namespace ChatClassLibrary
             this.publicRoom2 = new ChatroomHandler(Guid.NewGuid()) { ChatroomName = "Another Public Room" };
             this.ChatroomHandlerTable.Add(Guid.Empty, publicRoom);
             this.ChatroomHandlerTable.Add(publicRoom2.ChatroomId, publicRoom2);
-            this.ClientHandlerTable = publicRoom.ClientHandlerTable;
+
+            this.ClientHandlerTable = new Dictionary<Guid, ClientHandler>();
         }
 
         /// <summary>
@@ -120,13 +121,47 @@ namespace ChatClassLibrary
                 //this.ClientHandlerTable.Add(clientId, handler);
                 handler.BeginReceive();
 
-                handler.ClientDisconnected += (sender, e) => DisplayClientList();  // FIXME
+                handler.ClientRequestJoinChatroom += Handler_ClientRequestJoinChatroom;
+                handler.ClientRequestLeaveChatroom += Handler_ClientRequestLeaveChatroom;
+                handler.ClientDisconnected += (sender, e) =>
+                {
+                    this.ClientHandlerTable.Remove(((ClientHandler) sender).ClientId);
+                    DisplayClientList();
+                };
+
+                this.ClientHandlerTable.Add(handler.ClientId, handler);
 
                 this.publicRoom.AddClient(handler);
 
-                this.publicRoom2.AddClient(handler);
-
                 // TODO: send chatroom list updates
+                SendFullChatroomList(this.ClientHandlerTable.Values);
+            }
+        }
+
+        private void Handler_ClientRequestLeaveChatroom(object sender, ChatroomEventArgs e)
+        {
+            Guid roomId = e.ChatroomId;
+            ClientHandler client = (ClientHandler) sender;
+
+            if (ChatroomHandlerTable.ContainsKey(roomId) &&
+                ChatroomHandlerTable[roomId].ClientHandlerTable.ContainsKey(client.ClientId))
+            {
+                ChatroomHandlerTable[roomId].RemoveClient(client.ClientId);
+
+                SendFullChatroomList(this.ClientHandlerTable.Values);
+            }
+        }
+
+        private void Handler_ClientRequestJoinChatroom(object sender, ChatroomEventArgs e)
+        {
+            Guid roomId = e.ChatroomId;
+            ClientHandler client = (ClientHandler) sender;
+
+            if (ChatroomHandlerTable.ContainsKey(roomId) &&
+                !ChatroomHandlerTable[roomId].ClientHandlerTable.ContainsKey(client.ClientId))
+            {
+                ChatroomHandlerTable[roomId].AddClient(client);
+
                 SendFullChatroomList(this.ClientHandlerTable.Values);
             }
         }
@@ -449,6 +484,13 @@ namespace ChatClassLibrary
                 try
                 {   // (Blocking) read from the socket.
                     Message message = ChatProtocol.ReceiveMessage(this.NetworkStream);
+
+                    if (!message.IsValid)
+                        continue;
+                    else if (message.ControlInfo == ControlInfo.RequestJoinChatroom)
+                        this.OnClientRequestJoinChatroom(new ChatroomEventArgs(message.TargetId, null));
+                    else if (message.ControlInfo == ControlInfo.RequestLeaveChatroom)
+                        this.OnClientRequestLeaveChatroom(new ChatroomEventArgs(message.TargetId, null));
                     this.OnMessageReceived(new MessageEventArgs(message));
                 }
                 catch
@@ -468,6 +510,9 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageSendingFailed;
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
 
+        public event EventHandler<ChatroomEventArgs> ClientRequestJoinChatroom;
+        public event EventHandler<ChatroomEventArgs> ClientRequestLeaveChatroom;
+
         public event EventHandler<ConnectionEventArgs> ClientDisconnected;
 
         protected virtual void OnMessageSent(MessageEventArgs e)
@@ -478,6 +523,11 @@ namespace ChatClassLibrary
             => MessageSendingFailed?.Invoke(this, e);
         protected virtual void OnMessageReceivingingFailed(MessageEventArgs e)
             => MessageReceivingingFailed?.Invoke(this, e);
+
+        protected virtual void OnClientRequestJoinChatroom(ChatroomEventArgs e)
+            => ClientRequestJoinChatroom?.Invoke(this, e);
+        protected virtual void OnClientRequestLeaveChatroom(ChatroomEventArgs e)
+            => ClientRequestLeaveChatroom?.Invoke(this, e);
 
         protected virtual void OnClientDisconnected(ConnectionEventArgs e)
             => ClientDisconnected?.Invoke(this, e);

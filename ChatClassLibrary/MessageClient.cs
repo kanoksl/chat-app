@@ -86,7 +86,7 @@ namespace ChatClassLibrary
             }
         }
 
-        private string GetChatroomName(Guid chatroomId)
+        public string GetChatroomName(Guid chatroomId)
         {
             foreach (var room in this.KnownChatrooms)
                 if (room.ChatroomId == chatroomId) return room.ChatroomName;
@@ -140,7 +140,6 @@ namespace ChatClassLibrary
                     this.ClientSocket = new TcpClient();
                     this.ClientSocket.Connect(this.ServerEndPoint);
                     this.NetworkStream = this.ClientSocket.GetStream();
-                    //ChatProtocol.SendMessage_old(this.ClientId.ToString(), this.NetworkStream);
 
                     Message request = new Message
                     {
@@ -220,12 +219,10 @@ namespace ChatClassLibrary
                             UpdateKnownChatroomList(message.Text);
                         else if (message.ControlInfo == ControlInfo.ClientJoinedChatroom
                                  && message.SenderId == this.ClientId)
-                            this.OnClientJoinedChatroom(new ChatroomEventArgs(message.TargetId, 
-                                GetChatroomName(message.TargetId)));
+                            _JoinedChatRoom(message.TargetId);
                         else if (message.ControlInfo == ControlInfo.ClientLeftChatroom
                                  && message.SenderId == this.ClientId)
-                            this.OnClientLeftChatroom(new ChatroomEventArgs(message.TargetId,
-                                GetChatroomName(message.TargetId)));
+                            _LeftChatroom(message.TargetId);
                         else
                             this.OnMessageReceived(new MessageEventArgs(message));
                     }
@@ -241,6 +238,59 @@ namespace ChatClassLibrary
             }
 
             this.OnServerDisconnected(new ConnectionEventArgs(this.ServerEndPoint, this.ClientSocket));
+        }
+
+        private void _JoinedChatRoom(Guid roomId)
+        {
+            if (!JoinedChatrooms.Contains(roomId))
+            {
+                JoinedChatrooms.Add(roomId);
+                this.OnClientJoinedChatroom(new ChatroomEventArgs(roomId,
+                                    GetChatroomName(roomId)));
+                this.OnKnownChatroomsUpdated(EventArgs.Empty);
+            }
+
+        }
+
+        private void _LeftChatroom(Guid roomId)
+        {
+            if (JoinedChatrooms.Contains(roomId))
+            {
+                JoinedChatrooms.Remove(roomId);
+                this.OnClientLeftChatroom(new ChatroomEventArgs(roomId,
+                                GetChatroomName(roomId)));
+                this.OnKnownChatroomsUpdated(EventArgs.Empty);
+            }
+        }
+
+        public void RequestJoinChatroom(Guid roomId)
+        {
+            if (JoinedChatrooms.Contains(roomId))
+                return;  // Already joined.
+
+            Message request = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.RequestJoinChatroom,
+                SenderId = this.ClientId,
+                TargetId = roomId
+            };
+            ChatProtocol.SendMessage(request, this.NetworkStream);
+        }
+
+        public void RequestLeaveChatroom(Guid roomId)
+        {
+            if (!JoinedChatrooms.Contains(roomId))
+                return;  // Not a member.
+
+            Message request = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.RequestLeaveChatroom,
+                SenderId = this.ClientId,
+                TargetId = roomId
+            };
+            ChatProtocol.SendMessage(request, this.NetworkStream);
         }
 
         private void UpdateKnownClientList(Guid roomId, string clientList)
@@ -290,6 +340,10 @@ namespace ChatClassLibrary
                 this.NetworkStream = null;
 
                 this._receiveCTS?.Cancel();
+
+                this.KnownChatrooms.Clear();
+                this.KnownClients.Clear();
+                this.JoinedChatrooms.Clear();
 
                 this.OnClientDisconnected(new ConnectionEventArgs(this.ServerEndPoint, this.ClientSocket));
             }

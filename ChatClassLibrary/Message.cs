@@ -28,16 +28,16 @@ namespace ChatClassLibrary
     
     public enum ControlInfo
     {
-        None = 0x00,                     // 00 0000  Data message, not control message.
-        ClientRequestConnection = 0x20,  // 10 0000  The client wants to connect to server.
-        ConnectionAccepted = 0x10,       // 01 0000  The server accepted connection.
-        ConnectionRejected = 0x11,       // 01 0001  The server rejected connection.
+        None,                     // Data message, not control message.
+        ClientRequestConnection,  // The client wants to connect to server.
+        ConnectionAccepted,       // The server accepted connection.
+        ConnectionRejected,       // The server rejected connection.
 
-        RequestFileUpload = 0x2A,        // 10 1010  The client wants to upload a file to server.
-        RequestFileDownload = 0x2B,      // 10 1011  The client wants to download a file from server.
-        RequestGranted = 0x1C,           // 01 1100  The server allowed file upload/download.
-        RequestDenied = 0x1D,            // 01 1101  The server rejected file transfer request.
-        FileAvailable,  // A file has been uploaded; others can download.
+        RequestFileUpload,        // The client wants to upload a file to server.
+        RequestFileDownload,      // The client wants to download a file from server.
+        RequestGranted,           // The server allowed file upload/download.
+        RequestDenied,            // The server rejected file transfer request.
+        FileAvailable,            // A file has been uploaded; others can download.
 
         RequestClientList,
         RequestChatroomList,
@@ -48,6 +48,7 @@ namespace ChatClassLibrary
         ClientLeftChatroom,
 
         RequestJoinChatroom,
+        RequestLeaveChatroom,
         RequestCreateChatroom
     }
 

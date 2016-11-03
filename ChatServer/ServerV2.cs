@@ -15,8 +15,8 @@ namespace ChatServer
         {
             Console.WriteLine("Initializing server V2...");
 
-            //IPAddress localAddress = ServerProgram.SelectLocalIPAddress();
-            IPAddress localAddress = IPAddress.Any;
+            IPAddress localAddress = ServerProgram.SelectLocalIPAddress();
+            //IPAddress localAddress = IPAddress.Any;
 
             MessageServer server = new MessageServer(localAddress);
             server.StartListening();

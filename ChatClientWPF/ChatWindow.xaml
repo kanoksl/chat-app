@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChatClientWPF"
         mc:Ignorable="d"
-        Title="ChatWindow" Height="540" Width="720">
+        Title="ChatWindow" Height="540" Width="720"
+        Closing="Window_Closing">
     <Grid>
         <TabControl x:Name="tabControl" BorderThickness="0,1,0,0">
             <TabItem Header="Messages" Width="120" Height="24" Margin="-2">
@@ -13,13 +14,13 @@
                     <ListView x:Name="listView_Chat" Margin="4,4,4,32">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time, StringFormat={}\{0:yyyy-MM-dd HH:mm\}}"/>
                                 <GridViewColumn Header="Sender" Width="160" DisplayMemberBinding="{Binding Sender}"/>
                                 <GridViewColumn Header="Message" Width="400" DisplayMemberBinding="{Binding MessageText}"/>
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <TextBox x:Name="tbxChatInput" Height="23" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Bottom" Margin="4,0,105,4" KeyDown="tbxChatInput_KeyDown"/>
+                    <TextBox x:Name="tbxChatInput" Height="23" TextWrapping="Wrap" VerticalAlignment="Bottom" Margin="4,0,105,4" KeyDown="tbxChatInput_KeyDown" SpellCheck.IsEnabled="True" VerticalContentAlignment="Center"/>
                     <Button x:Name="btnChatSend" Content="Send" HorizontalAlignment="Right" Margin="0,0,4,4" VerticalAlignment="Bottom" Width="96" Height="23" Click="btnChatSend_Click"/>
                 </Grid>
             </TabItem>
@@ -45,7 +46,9 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Chatroom Details" Width="120" Height="24" Margin="-6,-2,-2,-2">
-                <Grid Background="#FFE5E5E5"/>
+                <Grid Background="#FFE5E5E5">
+                    <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom" Click="btnLeaveChatroom_Click"/>
+                </Grid>
             </TabItem>
         </TabControl>
 
