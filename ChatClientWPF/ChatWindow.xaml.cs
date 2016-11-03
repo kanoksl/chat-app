@@ -20,38 +20,61 @@ namespace ChatClientWPF
 {
     public partial class ChatWindow : Window
     {
-        public Guid ChatroomId { get; set; }
+        /// <summary>
+        /// The ID of the chatroom in case of group chat, or the ID of other
+        /// client in case of private chat.
+        /// </summary>
+        public Guid ChatId { get; set; }
 
-        private string chatroomName;
+        private string chatName;
 
-        public string ChatroomName
+        public string ChatName
         {
-            get { return chatroomName; }
+            get { return chatName; }
             set
             {
-                chatroomName = value;
-                this.Title = "Chat# - " + chatroomName;
+                chatName = value;
+                this.Title = "Chat# - " + chatName
+                    + (PrivateMode ? " [Private Chat]" : " [Group Chat]");
             }
         }
 
+        public bool PrivateMode { get; set; }
 
         public MessageClient ClientService { get; set; }
 
         private ObservableCollection<MessageLine> ChatHistory { get; set; }
 
-        public ChatWindow(Guid roomId, MessageClient clientService)
+        public ChatWindow(Guid roomId, MessageClient clientService, bool privateChat = false)
         {
             InitializeComponent();
 
-            this.ChatroomId = roomId;
+            this.ChatId = roomId;
             this.ClientService = clientService;
+            this.PrivateMode = privateChat;
 
             this.ChatHistory = new ObservableCollection<MessageLine>();
             listView_Chat.ItemsSource = ChatHistory;
+
+            tab_More.Visibility = privateChat ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        public void LoadMemberList()
+        {
+            if (this.PrivateMode)
+                return;
 
-        private Dictionary<Guid, string> clientNamesCache = new Dictionary<Guid, string>();
+            try
+            {
+                listBox_Members.ItemsSource = null;
+                listBox_Members.ItemsSource = ClientService.KnownChatrooms[this.ChatId].MembersInfo;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
+        }
+
         public void DisplayMessage(Message message)
         {
             if (message.Text == null || message.Text == "")
@@ -64,19 +87,8 @@ namespace ChatClientWPF
                 senderName = "<SERVER>";
             else if (senderId == ClientService.ClientId)
                 senderName = "<YOU>";
-            else if (clientNamesCache.ContainsKey(senderId))
-                senderName = clientNamesCache[senderId];
             else
-            {
-                foreach (var client in ClientService.KnownClients)
-                {
-                    if (senderId != client.ClientId)
-                        continue;
-                    senderName = client.DisplayName;
-                    clientNamesCache.Add(senderId, senderName);
-                    break;
-                }
-            }
+                senderName = ClientService.GetClientName(senderId);
 
             this.Dispatcher.Invoke(() =>
             {   // Called from different thread.
@@ -98,12 +110,18 @@ namespace ChatClientWPF
                 this.Sender = sender;
                 this.MessageText = text;
             }
+
+            public string Color
+                => Sender == "<SERVER>" ? "Red" 
+                   : Sender == "<YOU>" ? "Blue" 
+                   : "Black";
+              
         }
 
         private void btnChatSend_Click(object sender, RoutedEventArgs e)
         {
             string messageText = tbxChatInput.Text.Trim();
-            ClientService?.SendMessage(messageText, this.ChatroomId);
+            ClientService?.SendMessage(messageText, this.ChatId, this.PrivateMode);
 
             tbxChatInput.Text = "";
             tbxChatInput.Focus();
@@ -126,7 +144,15 @@ namespace ChatClientWPF
 
         private void btnLeaveChatroom_Click(object sender, RoutedEventArgs e)
         {
-            ClientService?.RequestLeaveChatroom(this.ChatroomId);
+            ClientService?.RequestLeaveChatroom(this.ChatId);
+        }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //if (((TabControl) sender).SelectedIndex == 2)
+            //{
+            //    this.LoadMemberList();
+            //}
         }
     }
 }

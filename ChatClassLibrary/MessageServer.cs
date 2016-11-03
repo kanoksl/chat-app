@@ -128,6 +128,7 @@ namespace ChatClassLibrary
                     this.ClientHandlerTable.Remove(((ClientHandler) sender).ClientId);
                     DisplayClientList();
                 };
+                handler.PrivateMessageReceived += Handler_PrivateMessageReceived;
 
                 this.ClientHandlerTable.Add(handler.ClientId, handler);
 
@@ -136,6 +137,17 @@ namespace ChatClassLibrary
                 // TODO: send chatroom list updates
                 SendFullChatroomList(this.ClientHandlerTable.Values);
             }
+        }
+
+        private void Handler_PrivateMessageReceived(object sender, MessageEventArgs e)
+        {
+            if (!ClientHandlerTable.ContainsKey(e.Message.TargetId))
+                return;
+
+            var target = ClientHandlerTable[e.Message.TargetId];
+            target.SendMessage(e.Message);
+
+            ((ClientHandler) sender).SendMessage(e.Message);
         }
 
         private void Handler_ClientRequestLeaveChatroom(object sender, ChatroomEventArgs e)
@@ -491,7 +503,11 @@ namespace ChatClassLibrary
                         this.OnClientRequestJoinChatroom(new ChatroomEventArgs(message.TargetId, null));
                     else if (message.ControlInfo == ControlInfo.RequestLeaveChatroom)
                         this.OnClientRequestLeaveChatroom(new ChatroomEventArgs(message.TargetId, null));
-                    this.OnMessageReceived(new MessageEventArgs(message));
+
+                    if (message.Type == MessageType.UserPrivateMessage)
+                        this.OnPrivateMessageReceived(new MessageEventArgs(message));
+                    else
+                        this.OnMessageReceived(new MessageEventArgs(message));
                 }
                 catch
                 {
@@ -509,6 +525,7 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<MessageEventArgs> MessageSendingFailed;
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
+        public event EventHandler<MessageEventArgs> PrivateMessageReceived;
 
         public event EventHandler<ChatroomEventArgs> ClientRequestJoinChatroom;
         public event EventHandler<ChatroomEventArgs> ClientRequestLeaveChatroom;
@@ -523,6 +540,8 @@ namespace ChatClassLibrary
             => MessageSendingFailed?.Invoke(this, e);
         protected virtual void OnMessageReceivingingFailed(MessageEventArgs e)
             => MessageReceivingingFailed?.Invoke(this, e);
+        protected virtual void OnPrivateMessageReceived(MessageEventArgs e)
+            => PrivateMessageReceived?.Invoke(this, e);
 
         protected virtual void OnClientRequestJoinChatroom(ChatroomEventArgs e)
             => ClientRequestJoinChatroom?.Invoke(this, e);

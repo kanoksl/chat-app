@@ -56,6 +56,7 @@ namespace ChatClientWPF
                 ClientService.MessageSent += ClientService_MessageSent;
                 ClientService.MessageReceivingingFailed += ClientService_MessageReceivingingFailed;
                 ClientService.MessageSendingFailed += ClientService_MessageSendingFailed;
+                ClientService.PrivateMessageReceived += ClientService_PrivateMessageReceived;
 
                 ClientService.KnownChatroomsUpdated += ClientService_KnownChatroomsUpdated;
                 ClientService.KnownClientsUpdated += ClientService_KnownClientsUpdated;
@@ -69,6 +70,31 @@ namespace ChatClientWPF
             {   // Invalid IP address.
                 ClientService_ConnectionFailed(this, null);
             }
+        }
+
+        private void ClientService_PrivateMessageReceived(object sender, MessageEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {   // Called from different thread.
+
+                Guid chatId = e.Message.SenderId;
+                if (chatId == ClientService.ClientId)  // The message that was mirrored back.
+                    chatId = e.Message.TargetId;
+
+                if (!ChatWindows.ContainsKey(chatId))
+                {
+                    ChatWindow win = new ChatWindow(chatId, this.ClientService, true);
+                    win.ChatName = ClientService.GetClientName(chatId);
+                    win.Show();
+                    win.DisplayMessage(e.Message);
+
+                    ChatWindows.Add(chatId, win);
+                }
+                else
+                {
+                    ChatWindows[chatId].DisplayMessage(e.Message);
+                }
+            });
         }
 
         private void ClientService_ClientLeftChatroom(object sender, ChatroomEventArgs e)
@@ -90,7 +116,8 @@ namespace ChatClientWPF
                 if (!ChatWindows.ContainsKey(e.ChatroomId))
                 {
                     ChatWindow newWindow = new ChatWindow(e.ChatroomId, this.ClientService);
-                    newWindow.ChatroomName = e.ChatroomName;
+                    newWindow.ChatName = e.ChatroomName;
+                    newWindow.LoadMemberList();
                     ChatWindows.Add(e.ChatroomId, newWindow);
                     newWindow.Show();
                 }
@@ -111,10 +138,16 @@ namespace ChatClientWPF
             this.Dispatcher.Invoke(() =>
             {   // Called from different thread.
                 listBox_Users.ItemsSource = null;
-                listBox_Users.ItemsSource = ClientService.KnownClients;
+                listBox_Users.ItemsSource = ClientService.KnownClients.Values;
 
+                foreach (var window in ChatWindows.Values)
+                    window.LoadMemberList();
                 //foreach (var roomId in ClientService.JoinedChatrooms)
-                //    ChatWindows[roomId].ChatroomName = ClientService.GetChatroomName(roomId);
+                //{
+                //    ChatWindows[roomId].listBox_Members.ItemsSource = null;
+                //    ChatWindows[roomId].listBox_Members.ItemsSource 
+                //        = ClientService.KnownChatrooms[roomId].MembersInfo;
+                //}
             });
         }
 
@@ -123,10 +156,10 @@ namespace ChatClientWPF
             this.Dispatcher.Invoke(() =>
             {   // Called from different thread.
                 listBox_Chatrooms.ItemsSource = null;
-                listBox_Chatrooms.ItemsSource = ClientService.KnownChatrooms;
+                listBox_Chatrooms.ItemsSource = ClientService.KnownChatrooms.Values;
 
                 foreach (var roomId in ClientService.JoinedChatrooms)
-                    ChatWindows[roomId].ChatroomName = ClientService.GetChatroomName(roomId);
+                    ChatWindows[roomId].ChatName = ClientService.GetChatroomName(roomId);
             });
         }
 
@@ -221,7 +254,23 @@ namespace ChatClientWPF
         {
             if (e.ClickCount >= 2)
             {
-                MessageBox.Show(listBox_Users.SelectedItem.ToString());
+                var userInfo = (MessageClient.ClientInfo) listBox_Users.SelectedItem;
+                //if (userInfo.ClientId == ClientService.ClientId)
+                //    return;  // No chatting with yourself.
+
+                if (!ChatWindows.ContainsKey(userInfo.ClientId))
+                {
+                    ChatWindow win = new ChatWindow(userInfo.ClientId, this.ClientService, true);
+                    win.ChatName = userInfo.DisplayName;
+                    win.Show();
+
+                    ChatWindows.Add(userInfo.ClientId, win);
+                }
+                else
+                {
+                    ChatWindows[userInfo.ClientId].Visibility = Visibility.Visible;
+                    ChatWindows[userInfo.ClientId].Activate();
+                }
             }
         }
 
@@ -238,7 +287,7 @@ namespace ChatClientWPF
                     ChatWindows[roomInfo.ChatroomId].Visibility = Visibility.Visible;
                     ChatWindows[roomInfo.ChatroomId].Activate();
                 }
-                else 
+                else
                     ClientService.RequestJoinChatroom(roomInfo.ChatroomId);
             }
         }

@@ -7,35 +7,70 @@
         mc:Ignorable="d"
         Title="ChatWindow" Height="540" Width="720"
         Closing="Window_Closing">
+    <Window.Resources>
+        <DataTemplate x:Key="DataTemplate_ClientList">
+            <StackPanel Background="Transparent">
+                <Label Content="{Binding DisplayName}" 
+                       FontWeight="Bold"/>
+                <Label Content="{Binding ClientId}" 
+                       Foreground="#50000000" 
+                       Margin="0,-4,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+        <GridView x:Key="ViewBase_ChatHistory">
+            <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time, StringFormat=\{0:yyyy-MM-dd HH:mm\}}"/>
+            <GridViewColumn Header="Sender" Width="160" DisplayMemberBinding="{Binding Sender}"/>
+            <GridViewColumn Header="Message" Width="400" DisplayMemberBinding="{Binding MessageText}"/>
+        </GridView>
+        <GridView x:Key="ViewBase_FileList">
+            <GridViewColumn Header="File Name" Width="300"/>
+            <GridViewColumn Header="Size" Width="100"/>
+            <GridViewColumn Header="Uploaded" Width="120"/>
+            <GridViewColumn Header="Uploader" Width="120"/>
+        </GridView>
+    </Window.Resources>
+
     <Grid>
-        <TabControl x:Name="tabControl" BorderThickness="0,1,0,0">
-            <TabItem Header="Messages" Width="120" Height="24" Margin="-2">
+        <TabControl BorderThickness="0,1,0,0" SelectionChanged="TabControl_SelectionChanged">
+
+            <TabItem x:Name="tab_Chat" Header="Messages" 
+                     Width="120" Height="24" Margin="-2">
                 <Grid>
-                    <ListView x:Name="listView_Chat" Margin="4,4,4,32">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time, StringFormat={}\{0:yyyy-MM-dd HH:mm\}}"/>
-                                <GridViewColumn Header="Sender" Width="160" DisplayMemberBinding="{Binding Sender}"/>
-                                <GridViewColumn Header="Message" Width="400" DisplayMemberBinding="{Binding MessageText}"/>
-                            </GridView>
-                        </ListView.View>
+                    <ListView x:Name="listView_Chat"  
+                              View="{DynamicResource ViewBase_ChatHistory}"
+                              Margin="4,4,4,32">
+                        <!--<ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Sender}" Value="MyName">
+                                        <Setter Property="Background" Value="Red"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.ItemContainerStyle>-->
                     </ListView>
-                    <TextBox x:Name="tbxChatInput" Height="23" TextWrapping="Wrap" VerticalAlignment="Bottom" Margin="4,0,105,4" KeyDown="tbxChatInput_KeyDown" SpellCheck.IsEnabled="True" VerticalContentAlignment="Center"/>
-                    <Button x:Name="btnChatSend" Content="Send" HorizontalAlignment="Right" Margin="0,0,4,4" VerticalAlignment="Bottom" Width="96" Height="23" Click="btnChatSend_Click"/>
+
+                    <TextBox x:Name="tbxChatInput" 
+                             Height="23" Margin="4,0,105,4"  
+                             TextWrapping="Wrap" 
+                             VerticalAlignment="Bottom"
+                             VerticalContentAlignment="Center"
+                             SpellCheck.IsEnabled="True"
+                             KeyDown="tbxChatInput_KeyDown"/>
+                    <Button x:Name="btnChatSend" Content="Send" 
+                            Width="96" Height="23" Margin="0,0,4,4" 
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Click="btnChatSend_Click"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="File Sharing" Width="120" Height="24" Margin="-4,-2,-2,-2">
+
+            <TabItem x:Name="tab_Files"  Header="File Sharing" 
+                     Width="120" Height="24" Margin="-4,-2,-2,-2">
                 <Grid>
-                    <ListView x:Name="listView_Files" Margin="4,4,4,0" Height="226" VerticalAlignment="Top">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="File Name" Width="300"/>
-                                <GridViewColumn Header="Size" Width="100"/>
-                                <GridViewColumn Header="Uploaded" Width="120"/>
-                                <GridViewColumn Header="Uploader" Width="120"/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <ListView x:Name="listView_Files" 
+                              View="{DynamicResource ViewBase_FileList}"
+                              Margin="4,4,4,0" Height="226" VerticalAlignment="Top" />
+
                     <Grid Height="120" VerticalAlignment="Bottom" Background="#FFE6E6E6">
                         <TextBox x:Name="tbxFilePath" Margin="91.933,14,93,0" TextWrapping="Wrap" Text="TextBox" Height="23" VerticalAlignment="Top"/>
                         <Button x:Name="btnBrowse" Content="..." HorizontalAlignment="Right" Margin="0,14,10,0" Width="78" VerticalAlignment="Top" Height="21.96"/>
@@ -45,11 +80,24 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Chatroom Details" Width="120" Height="24" Margin="-6,-2,-2,-2">
+
+            <TabItem x:Name="tab_More" Header="Chatroom Details"
+                     Width="120" Height="24" Margin="-6,-2,-2,-2">
                 <Grid Background="#FFE5E5E5">
-                    <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom" Click="btnLeaveChatroom_Click"/>
+                    <Label Content="Chatroom Members"  
+                           Height="25" Width="278" Margin="10,10,0,0"
+                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <ListBox x:Name="listBox_Members"
+                             ItemTemplate="{DynamicResource DataTemplate_ClientList}"
+                             Width="280" Margin="8,40,0,10" HorizontalAlignment="Left"/>
+
+                    <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom" 
+                            Width="128" Height="24" Margin="0,0,10,10"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                            Click="btnLeaveChatroom_Click" />
                 </Grid>
             </TabItem>
+
         </TabControl>
 
     </Grid>

@@ -69,12 +69,15 @@ namespace ChatClassLibrary
             public string ChatroomName { get; set; }
             public int MemberCount { get; set; }
             public List<Guid> Members { get; set; }  // Only for joined rooms.
+            public List<ClientInfo> MembersInfo { get; set; }
 
             public ChatroomInfo(Guid id, string name, int count)
             {
                 this.ChatroomId = id;
                 this.ChatroomName = name;
                 this.MemberCount = count;
+                this.Members = new List<Guid>();
+                this.MembersInfo = new List<ClientInfo>();
             }
 
             public override string ToString()
@@ -88,9 +91,18 @@ namespace ChatClassLibrary
 
         public string GetChatroomName(Guid chatroomId)
         {
-            foreach (var room in this.KnownChatrooms)
-                if (room.ChatroomId == chatroomId) return room.ChatroomName;
-            return "<UNKNOWN ROOM>";
+            if (KnownChatrooms.ContainsKey(chatroomId))
+                return KnownChatrooms[chatroomId].ChatroomName;
+            else
+                return "<UNKNOWN ROOM>";
+        }
+
+        public string GetClientName(Guid clientId)
+        {
+            if (KnownClients.ContainsKey(clientId))
+                return KnownClients[clientId].DisplayName;
+            else
+                return "<UNKNOWN CLIENT>";
         }
 
         //--------------------------------------------------------------------------------------//
@@ -105,8 +117,8 @@ namespace ChatClassLibrary
         public string DisplayName { get; set; }
 
 
-        public List<ClientInfo> KnownClients { get; set; }
-        public List<ChatroomInfo> KnownChatrooms { get; set; }
+        public Dictionary<Guid, ClientInfo> KnownClients { get; set; }
+        public Dictionary<Guid, ChatroomInfo> KnownChatrooms { get; set; }
         public List<Guid> JoinedChatrooms { get; set; }
 
 
@@ -122,8 +134,9 @@ namespace ChatClassLibrary
             this.ServerEndPoint = serverEP;
             this.ClientId = Guid.NewGuid();
 
-            this.KnownClients = new List<ClientInfo>();
-            this.KnownChatrooms = new List<ChatroomInfo>();
+            this.KnownClients = new Dictionary<Guid, ClientInfo>();
+            this.KnownChatrooms = new Dictionary<Guid, ChatroomInfo>();
+            this.KnownChatrooms.Add(Guid.Empty, new ChatroomInfo(Guid.Empty, "Public Room", -1));
             this.JoinedChatrooms = new List<Guid>();
         }
 
@@ -175,11 +188,12 @@ namespace ChatClassLibrary
             });
         }
 
-        public void SendMessage(string messageText, Guid targetId)
+        public void SendMessage(string messageText, Guid targetId, bool privateMessage = false)
         {
             Message message = new Message
             {
-                Type = MessageType.UserGroupMessage,
+                Type = privateMessage ? MessageType.UserPrivateMessage
+                                      : MessageType.UserGroupMessage,
                 ControlInfo = ControlInfo.None,
                 SenderId = this.ClientId,
                 TargetId = targetId,
@@ -217,12 +231,12 @@ namespace ChatClassLibrary
                             UpdateKnownClientList(message.SenderId, message.Text);
                         else if (message.ControlInfo == ControlInfo.ChatroomList)
                             UpdateKnownChatroomList(message.Text);
-                        else if (message.ControlInfo == ControlInfo.ClientJoinedChatroom
-                                 && message.SenderId == this.ClientId)
+                        else if (message.ControlInfo == ControlInfo.ClientJoinedChatroom && message.SenderId == this.ClientId)
                             _JoinedChatRoom(message.TargetId);
-                        else if (message.ControlInfo == ControlInfo.ClientLeftChatroom
-                                 && message.SenderId == this.ClientId)
+                        else if (message.ControlInfo == ControlInfo.ClientLeftChatroom && message.SenderId == this.ClientId)
                             _LeftChatroom(message.TargetId);
+                        else if (message.Type == MessageType.UserPrivateMessage)
+                            this.OnPrivateMessageReceived(new MessageEventArgs(message));
                         else
                             this.OnMessageReceived(new MessageEventArgs(message));
                     }
@@ -296,6 +310,15 @@ namespace ChatClassLibrary
         private void UpdateKnownClientList(Guid roomId, string clientList)
         {
             this.KnownClients.Clear();
+
+            ChatroomInfo roomInfo = null;
+            if (this.KnownChatrooms.ContainsKey(roomId))
+            {
+                roomInfo = KnownChatrooms[roomId];
+                roomInfo.Members.Clear();
+                roomInfo.MembersInfo.Clear();
+            }
+
             using (var reader = new StringReader(clientList))
             {
                 string guidStr;
@@ -304,8 +327,11 @@ namespace ChatClassLibrary
                     string name = reader.ReadLine();
 
                     var clientId = Guid.Parse(guidStr);
+                    var newClient = new ClientInfo(clientId, name);
 
-                    this.KnownClients.Add(new ClientInfo(clientId, name));
+                    this.KnownClients.Add(clientId, newClient);
+                    roomInfo?.Members.Add(clientId);
+                    roomInfo?.MembersInfo.Add(newClient);
                 }
             }
             this.OnKnownClientsUpdated(EventArgs.Empty);
@@ -313,7 +339,8 @@ namespace ChatClassLibrary
 
         private void UpdateKnownChatroomList(string chatroomList)
         {
-            this.KnownChatrooms.Clear();
+            //this.KnownChatrooms.Clear();
+            var temp = new HashSet<Guid>();
             using (var reader = new StringReader(chatroomList))
             {
                 string guidStr;
@@ -324,10 +351,17 @@ namespace ChatClassLibrary
 
                     var roomId = Guid.Parse(guidStr);
                     var count = int.Parse(countStr);
+                    var newRoom = new ChatroomInfo(roomId, name, count);
 
-                    this.KnownChatrooms.Add(new ChatroomInfo(roomId, name, count));
+                    temp.Add(roomId);
+                    if (!KnownChatrooms.ContainsKey(roomId))
+                        this.KnownChatrooms.Add(roomId, newRoom);
                 }
             }
+
+            foreach (var roomId in KnownChatrooms.Keys)
+                if (!temp.Contains(roomId)) KnownChatrooms.Remove(roomId);
+
             this.OnKnownChatroomsUpdated(EventArgs.Empty);
         }
 
@@ -356,6 +390,7 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<MessageEventArgs> MessageSendingFailed;
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
+        public event EventHandler<MessageEventArgs> PrivateMessageReceived;
 
         public event EventHandler KnownClientsUpdated;
         public event EventHandler KnownChatroomsUpdated;
@@ -376,6 +411,8 @@ namespace ChatClassLibrary
             => MessageSendingFailed?.Invoke(this, e);
         protected virtual void OnMessageReceivingingFailed(MessageEventArgs e)
             => MessageReceivingingFailed?.Invoke(this, e);
+        protected virtual void OnPrivateMessageReceived(MessageEventArgs e)
+            => PrivateMessageReceived?.Invoke(this, e);
 
         protected virtual void OnKnownClientsUpdated(EventArgs e)
             => KnownClientsUpdated?.Invoke(this, e);
