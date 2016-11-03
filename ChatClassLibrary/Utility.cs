@@ -50,7 +50,7 @@ namespace ChatClassLibrary
                 Array.Reverse(newBytes);
                 bytes = newBytes;
             }
-            int value = BitConverter.ToInt32(bytes, startIndex);
+            int value = BitConverter.ToInt32(bytes, 0);
             return value;
         }
         
@@ -68,7 +68,7 @@ namespace ChatClassLibrary
                 Array.Reverse(newBytes);
                 bytes = newBytes;
             }
-            long value = BitConverter.ToInt64(bytes, startIndex);
+            long value = BitConverter.ToInt64(bytes, 0);
             return value;
         }
 

@@ -64,16 +64,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChatWindowV2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChatWindowV2.Designer.cs">
+      <DependentUpon>ChatWindowV2.cs</DependentUpon>
+    </Compile>
     <Compile Include="ChatWindow.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ChatWindow.Designer.cs">
       <DependentUpon>ChatWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="ChatWindowV3.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChatWindowV3.Designer.cs">
+      <DependentUpon>ChatWindowV3.cs</DependentUpon>
+    </Compile>
     <Compile Include="ClientProgram.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ChatWindowV2.resx">
+      <DependentUpon>ChatWindowV2.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ChatWindow.resx">
       <DependentUpon>ChatWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ChatWindowV3.resx">
+      <DependentUpon>ChatWindowV3.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

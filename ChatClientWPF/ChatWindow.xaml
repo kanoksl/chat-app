@@ -1,0 +1,53 @@
+﻿<Window x:Class="ChatClientWPF.ChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ChatClientWPF"
+        mc:Ignorable="d"
+        Title="ChatWindow" Height="540" Width="720">
+    <Grid>
+        <TabControl x:Name="tabControl" BorderThickness="0,1,0,0">
+            <TabItem Header="Messages" Width="120" Height="24" Margin="-2">
+                <Grid>
+                    <ListView x:Name="listView_Chat" Margin="4,4,4,32">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="Sender" Width="160" DisplayMemberBinding="{Binding Sender}"/>
+                                <GridViewColumn Header="Message" Width="400" DisplayMemberBinding="{Binding MessageText}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBox x:Name="tbxChatInput" Height="23" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Bottom" Margin="4,0,105,4" KeyDown="tbxChatInput_KeyDown"/>
+                    <Button x:Name="btnChatSend" Content="Send" HorizontalAlignment="Right" Margin="0,0,4,4" VerticalAlignment="Bottom" Width="96" Height="23" Click="btnChatSend_Click"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="File Sharing" Width="120" Height="24" Margin="-4,-2,-2,-2">
+                <Grid>
+                    <ListView x:Name="listView_Files" Margin="4,4,4,0" Height="226" VerticalAlignment="Top">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="File Name" Width="300"/>
+                                <GridViewColumn Header="Size" Width="100"/>
+                                <GridViewColumn Header="Uploaded" Width="120"/>
+                                <GridViewColumn Header="Uploader" Width="120"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Grid Height="120" VerticalAlignment="Bottom" Background="#FFE6E6E6">
+                        <TextBox x:Name="tbxFilePath" Margin="91.933,14,93,0" TextWrapping="Wrap" Text="TextBox" Height="23" VerticalAlignment="Top"/>
+                        <Button x:Name="btnBrowse" Content="..." HorizontalAlignment="Right" Margin="0,14,10,0" Width="78" VerticalAlignment="Top" Height="21.96"/>
+                        <Button x:Name="btnUpload" Content="Upload" HorizontalAlignment="Right" Margin="0,0,13,24.04" Width="75" VerticalAlignment="Bottom"/>
+                        <ProgressBar x:Name="pgbFileUpload" Height="10" Margin="91.933,0,93,24.04" VerticalAlignment="Bottom"/>
+                        <Label x:Name="label" Content="Upload a file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Chatroom Details" Width="120" Height="24" Margin="-6,-2,-2,-2">
+                <Grid Background="#FFE5E5E5"/>
+            </TabItem>
+        </TabControl>
+
+    </Grid>
+</Window>
