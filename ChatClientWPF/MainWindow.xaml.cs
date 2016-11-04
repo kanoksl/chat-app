@@ -40,6 +40,8 @@ namespace ChatClientWPF
                 return;
             }
 
+            pgbConnect.IsIndeterminate = true;
+
             IPAddress serverIP;
             if (IPAddress.TryParse(tbxServerAddress.Text.Trim(), out serverIP))
             {
@@ -58,6 +60,8 @@ namespace ChatClientWPF
                 ClientService.MessageSendingFailed += ClientService_MessageSendingFailed;
                 ClientService.PrivateMessageReceived += ClientService_PrivateMessageReceived;
 
+                ClientService.FileAvailable += ClientService_FileAvailable;
+
                 ClientService.KnownChatroomsUpdated += ClientService_KnownChatroomsUpdated;
                 ClientService.KnownClientsUpdated += ClientService_KnownClientsUpdated;
 
@@ -70,6 +74,48 @@ namespace ChatClientWPF
             {   // Invalid IP address.
                 ClientService_ConnectionFailed(this, null);
             }
+        }
+
+        private void ClientService_FileAvailable(object sender, MessageEventArgs e)
+        {
+            string fileInfo = e.Message.Text;
+            // TODO: add to GUI file list
+            string uploader = ClientService.GetClientName(e.Message.SenderId);
+
+            Message notification = new Message
+            {
+                Type = MessageType.SystemMessage,
+                ControlInfo = ControlInfo.None,
+                SenderId = Message.NullID,
+                TargetId = e.Message.TargetId,
+                TimeSent = DateTime.Now,
+                Text = "<Client '" + uploader + "' has uploaded a file.>"
+            };
+            _DisplayMessage(notification);
+        }
+
+        private void _Disconnect()
+        {
+            ClientService.ConnectionEstablished -= ClientService_ConnectionEstablished;
+            ClientService.ConnectionFailed -= ClientService_ConnectionFailed;
+            ClientService.ServerDisconnected -= ClientService_ServerDisconnected;
+            ClientService.ClientDisconnected -= ClientService_ClientDisconnected;
+
+            ClientService.MessageReceived -= ClientService_MessageReceived;
+            ClientService.MessageSent -= ClientService_MessageSent;
+            ClientService.MessageReceivingingFailed -= ClientService_MessageReceivingingFailed;
+            ClientService.MessageSendingFailed -= ClientService_MessageSendingFailed;
+            ClientService.PrivateMessageReceived -= ClientService_PrivateMessageReceived;
+
+            ClientService.KnownChatroomsUpdated -= ClientService_KnownChatroomsUpdated;
+            ClientService.KnownClientsUpdated -= ClientService_KnownClientsUpdated;
+
+            ClientService.ClientJoinedChatroom -= ClientService_ClientJoinedChatroom;
+            ClientService.ClientLeftChatroom -= ClientService_ClientLeftChatroom;
+
+            ChatWindows.Clear();
+
+            _UpdateGUI();
         }
 
         private void ClientService_PrivateMessageReceived(object sender, MessageEventArgs e)
@@ -148,6 +194,8 @@ namespace ChatClientWPF
                 //    ChatWindows[roomId].listBox_Members.ItemsSource 
                 //        = ClientService.KnownChatrooms[roomId].MembersInfo;
                 //}
+
+                ClientService_KnownChatroomsUpdated(sender, e);
             });
         }
 
@@ -188,7 +236,7 @@ namespace ChatClientWPF
 
         private void ClientService_ClientDisconnected(object sender, ConnectionEventArgs e)
         {
-            _UpdateGUI();
+            _Disconnect();
         }
 
         private void ClientService_ServerDisconnected(object sender, ConnectionEventArgs e)
@@ -247,6 +295,9 @@ namespace ChatClientWPF
 
                 if (!connected)
                     tab_Connect.IsSelected = true;
+
+                pgbConnect.IsIndeterminate = false;
+                pgbConnect.Value = connected ? 100 : 0;
             });
         }
 

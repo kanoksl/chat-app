@@ -37,6 +37,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -63,6 +64,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Base64Image.cs" />
     <Compile Include="ChatWindow.xaml.cs">
       <DependentUpon>ChatWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -111,6 +113,15 @@
       <Project>{8acec3f9-8622-4412-855b-702ad7c0d13a}</Project>
       <Name>ChatClassLibrary</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Image1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin\Debug\icn_user.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin\Debug\icn_chat.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

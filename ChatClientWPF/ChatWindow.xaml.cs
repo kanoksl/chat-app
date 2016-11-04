@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -153,6 +155,63 @@ namespace ChatClientWPF
             //{
             //    this.LoadMemberList();
             //}
+        }
+
+        private void File_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[]) e.Data.GetData(DataFormats.FileDrop);
+                tbxFilePath.Text = files[0];
+            }
+        }
+
+        private void btnBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.Title = "Choose a file to upload";
+            dialog.Filter = "All Files (*.*)|*.*";
+            dialog.CheckFileExists = true;
+            dialog.InitialDirectory = @"D:\";
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                tbxFilePath.Text = dialog.FileName;
+            }
+        }
+
+        private void btnUpload_Click(object sender, RoutedEventArgs e)
+        {
+            var progressReporter = new Progress<double>();
+            progressReporter.ProgressChanged += (s, progress) =>
+            {
+                pgbFileUpload.Value = (int) progress;
+            };
+
+            string filePath = tbxFilePath.Text.Trim();
+            IPEndPoint serverEP = new IPEndPoint(
+                ClientService.ServerEndPoint.Address,
+                FileProtocol.FtpListeningPort);
+
+            Thread ftpThread = new Thread(() =>
+            {
+                bool success = FileProtocol.SendFileExtended(filePath, serverEP, 
+                    ClientService.ClientId, this.ChatId, progressReporter);
+                //Message result = new Message
+                //{
+                //    Type = MessageType.SystemMessage,
+                //    ControlInfo = ControlInfo.None,
+                //    TimeSent = DateTime.Now,
+                //    Text = success ? "<file upload completed>" : "<FILE UPLOAD FAILED>"
+                //};
+                //DisplayMessage(result);
+                MessageBox.Show("The file has finished uploading.", "File Upload", MessageBoxButton.OK, MessageBoxImage.Information);
+            });
+
+            ftpThread.Name = "FTP Upload Thread";
+            ftpThread.Start();
         }
     }
 }

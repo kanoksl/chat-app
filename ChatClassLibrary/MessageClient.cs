@@ -67,15 +67,16 @@ namespace ChatClassLibrary
         {
             public Guid ChatroomId { get; set; }
             public string ChatroomName { get; set; }
-            public int MemberCount { get; set; }
+            public int MemberCount => Members?.Count ?? 0;
             public List<Guid> Members { get; set; }  // Only for joined rooms.
             public List<ClientInfo> MembersInfo { get; set; }
 
-            public ChatroomInfo(Guid id, string name, int count)
+            //public int MemberCount2 { get; set; }
+
+            public ChatroomInfo(Guid id, string name)
             {
                 this.ChatroomId = id;
                 this.ChatroomName = name;
-                this.MemberCount = count;
                 this.Members = new List<Guid>();
                 this.MembersInfo = new List<ClientInfo>();
             }
@@ -108,7 +109,7 @@ namespace ChatClassLibrary
         //--------------------------------------------------------------------------------------//
         #region Properties
 
-        private IPEndPoint ServerEndPoint { get; set; }
+        public IPEndPoint ServerEndPoint { get; set; }
         private TcpClient ClientSocket { get; set; }
         private NetworkStream NetworkStream { get; set; }
 
@@ -136,7 +137,7 @@ namespace ChatClassLibrary
 
             this.KnownClients = new Dictionary<Guid, ClientInfo>();
             this.KnownChatrooms = new Dictionary<Guid, ChatroomInfo>();
-            this.KnownChatrooms.Add(Guid.Empty, new ChatroomInfo(Guid.Empty, "Public Room", -1));
+            this.KnownChatrooms.Add(Guid.Empty, new ChatroomInfo(Guid.Empty, "Public Room"));
             this.JoinedChatrooms = new List<Guid>();
         }
 
@@ -237,6 +238,8 @@ namespace ChatClassLibrary
                             _LeftChatroom(message.TargetId);
                         else if (message.Type == MessageType.UserPrivateMessage)
                             this.OnPrivateMessageReceived(new MessageEventArgs(message));
+                        else if (message.ControlInfo == ControlInfo.FileAvailable)
+                            this.OnFileAvailable(new MessageEventArgs(message));
                         else
                             this.OnMessageReceived(new MessageEventArgs(message));
                     }
@@ -261,9 +264,8 @@ namespace ChatClassLibrary
                 JoinedChatrooms.Add(roomId);
                 this.OnClientJoinedChatroom(new ChatroomEventArgs(roomId,
                                     GetChatroomName(roomId)));
-                this.OnKnownChatroomsUpdated(EventArgs.Empty);
             }
-
+            this.OnKnownChatroomsUpdated(EventArgs.Empty);
         }
 
         private void _LeftChatroom(Guid roomId)
@@ -273,8 +275,8 @@ namespace ChatClassLibrary
                 JoinedChatrooms.Remove(roomId);
                 this.OnClientLeftChatroom(new ChatroomEventArgs(roomId,
                                 GetChatroomName(roomId)));
-                this.OnKnownChatroomsUpdated(EventArgs.Empty);
             }
+            this.OnKnownChatroomsUpdated(EventArgs.Empty);
         }
 
         public void RequestJoinChatroom(Guid roomId)
@@ -309,7 +311,8 @@ namespace ChatClassLibrary
 
         private void UpdateKnownClientList(Guid roomId, string clientList)
         {
-            this.KnownClients.Clear();
+            if (roomId == Guid.Empty)
+                this.KnownClients.Clear();
 
             ChatroomInfo roomInfo = null;
             if (this.KnownChatrooms.ContainsKey(roomId))
@@ -319,21 +322,23 @@ namespace ChatClassLibrary
                 roomInfo.MembersInfo.Clear();
             }
 
-            using (var reader = new StringReader(clientList))
-            {
-                string guidStr;
-                while ((guidStr = reader.ReadLine()) != null)
+            if (clientList != null)
+                using (var reader = new StringReader(clientList))
                 {
-                    string name = reader.ReadLine();
+                    string guidStr;
+                    while ((guidStr = reader.ReadLine()) != null)
+                    {
+                        string name = reader.ReadLine();
 
-                    var clientId = Guid.Parse(guidStr);
-                    var newClient = new ClientInfo(clientId, name);
+                        var clientId = Guid.Parse(guidStr);
+                        var newClient = new ClientInfo(clientId, name);
 
-                    this.KnownClients.Add(clientId, newClient);
-                    roomInfo?.Members.Add(clientId);
-                    roomInfo?.MembersInfo.Add(newClient);
+                        if (roomId == Guid.Empty || !KnownClients.ContainsKey(clientId))
+                            this.KnownClients.Add(clientId, newClient);
+                        roomInfo?.Members.Add(clientId);
+                        roomInfo?.MembersInfo.Add(newClient);
+                    }
                 }
-            }
             this.OnKnownClientsUpdated(EventArgs.Empty);
         }
 
@@ -351,11 +356,13 @@ namespace ChatClassLibrary
 
                     var roomId = Guid.Parse(guidStr);
                     var count = int.Parse(countStr);
-                    var newRoom = new ChatroomInfo(roomId, name, count);
+                    var newRoom = new ChatroomInfo(roomId, name);
 
                     temp.Add(roomId);
                     if (!KnownChatrooms.ContainsKey(roomId))
                         this.KnownChatrooms.Add(roomId, newRoom);
+                    else if (count != KnownChatrooms[roomId].MemberCount)
+                        Console.WriteLine("AAAAAAAAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRRRRGGGGGGGGGHHHHHH");
                 }
             }
 
@@ -392,6 +399,8 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
         public event EventHandler<MessageEventArgs> PrivateMessageReceived;
 
+        public event EventHandler<MessageEventArgs> FileAvailable;
+
         public event EventHandler KnownClientsUpdated;
         public event EventHandler KnownChatroomsUpdated;
 
@@ -413,6 +422,8 @@ namespace ChatClassLibrary
             => MessageReceivingingFailed?.Invoke(this, e);
         protected virtual void OnPrivateMessageReceived(MessageEventArgs e)
             => PrivateMessageReceived?.Invoke(this, e);
+        protected virtual void OnFileAvailable(MessageEventArgs e)
+            => FileAvailable?.Invoke(this, e);
 
         protected virtual void OnKnownClientsUpdated(EventArgs e)
             => KnownClientsUpdated?.Invoke(this, e);

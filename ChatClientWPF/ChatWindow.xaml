@@ -31,14 +31,14 @@
     </Window.Resources>
 
     <Grid>
-        <TabControl BorderThickness="0,1,0,0" SelectionChanged="TabControl_SelectionChanged">
+        <TabControl BorderThickness="0,1,0,0" SelectionChanged="TabControl_SelectionChanged" Background="White">
 
             <TabItem x:Name="tab_Chat" Header="Messages" 
                      Width="120" Height="24" Margin="-2">
                 <Grid>
                     <ListView x:Name="listView_Chat"  
                               View="{DynamicResource ViewBase_ChatHistory}"
-                              Margin="4,4,4,32">
+                              Margin="4,4,4,33">
                         <!--<ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}">
                                 <Style.Triggers>
@@ -51,14 +51,14 @@
                     </ListView>
 
                     <TextBox x:Name="tbxChatInput" 
-                             Height="23" Margin="4,0,105,4"  
+                             Height="24" Margin="4,0,105,4"  
                              TextWrapping="Wrap" 
                              VerticalAlignment="Bottom"
                              VerticalContentAlignment="Center"
                              SpellCheck.IsEnabled="True"
-                             KeyDown="tbxChatInput_KeyDown"/>
+                             KeyDown="tbxChatInput_KeyDown" ToolTip="Type your messages here."/>
                     <Button x:Name="btnChatSend" Content="Send" 
-                            Width="96" Height="23" Margin="0,0,4,4" 
+                            Width="96" Height="24" Margin="0,0,4,4" 
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             Click="btnChatSend_Click"/>
                 </Grid>
@@ -69,15 +69,40 @@
                 <Grid>
                     <ListView x:Name="listView_Files" 
                               View="{DynamicResource ViewBase_FileList}"
-                              Margin="4,4,4,0" Height="226" VerticalAlignment="Top" />
+                              Margin="4,4,4,132" />
 
-                    <Grid Height="120" VerticalAlignment="Bottom" Background="#FFE6E6E6">
-                        <TextBox x:Name="tbxFilePath" Margin="91.933,14,93,0" TextWrapping="Wrap" Text="TextBox" Height="23" VerticalAlignment="Top"/>
-                        <Button x:Name="btnBrowse" Content="..." HorizontalAlignment="Right" Margin="0,14,10,0" Width="78" VerticalAlignment="Top" Height="21.96"/>
-                        <Button x:Name="btnUpload" Content="Upload" HorizontalAlignment="Right" Margin="0,0,13,24.04" Width="75" VerticalAlignment="Bottom"/>
-                        <ProgressBar x:Name="pgbFileUpload" Height="10" Margin="91.933,0,93,24.04" VerticalAlignment="Bottom"/>
-                        <Label x:Name="label" Content="Upload a file" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="btnDownload" Content="Remove" Margin="0,0,4,103" Height="24" 
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"/>
+
+                    <Grid Height="83" Margin="4,0,4,4"
+                          VerticalAlignment="Bottom"
+                          Drop="File_Drop" AllowDrop="True">
+                        <Border BorderThickness="1"  
+                                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
+
+                        <TextBox x:Name="tbxFilePath" Text="filePath"  
+                                 Height="24" Margin="10,34,164,0"
+                                 VerticalContentAlignment="Center" 
+                                 VerticalAlignment="Top"
+                                 Drop="File_Drop" AllowDrop="True"/>
+
+                        <Button x:Name="btnBrowse" Content="..." 
+                                Width="48" Margin="0,34,111,0" 
+                                HorizontalAlignment="Right" Height="24" VerticalAlignment="Top"
+                                Click="btnBrowse_Click"/>
+                        <Button x:Name="btnUpload" Content="Upload" 
+                                Width="96" Margin="0,34,10,0"
+                                HorizontalAlignment="Right" Height="24" VerticalAlignment="Top"
+                                Click="btnUpload_Click"/>
+
+                        <ProgressBar x:Name="pgbFileUpload" Margin="10,63,10,0" Height="11" VerticalAlignment="Top"/>
+
+                        <TextBlock Text="Choose a file to upload below, or drag from other application and drop here." 
+                                   HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
                     </Grid>
+                    <Button x:Name="btnDownload_Copy" Content="Download" Margin="0,0,105,103" Height="24" 
+                        VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"/>
                 </Grid>
             </TabItem>
 

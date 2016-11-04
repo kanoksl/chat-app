@@ -19,6 +19,7 @@ namespace ChatServer
             //IPAddress localAddress = IPAddress.Any;
 
             MessageServer server = new MessageServer(localAddress);
+            
             server.StartListening();
             
         }

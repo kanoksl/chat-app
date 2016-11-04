@@ -17,20 +17,25 @@
             <StackPanel Background="Transparent" 
                         MouseDown="listBox_Users_ItemMouseDown">
                 <TextBlock Text="{Binding DisplayName}" 
-                       FontWeight="Bold"/>
+                       FontWeight="Bold"
+                           Margin="4,4,4,2"/>
                 <TextBlock Text="{Binding ClientId, StringFormat=ID: {0}}" 
-                       Foreground="#50000000"/>
+                       Foreground="#50000000"
+                           Margin="4,0,4,6"/>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="DataTemplate_ChatroomList">
             <StackPanel Background="Transparent" 
                         MouseDown="listBox_Chatrooms_ItemMouseDown">
                 <TextBlock Text="{Binding ChatroomName}" 
-                       FontWeight="Bold"/>
-                <TextBlock Text="{Binding ChatroomId, StringFormat=ID: {0}}"
-                       Foreground="#50000000"/>
-                <TextBlock Text="{Binding MemberCount, StringFormat=Members: {0:#}}" 
-                       Foreground="#50000000"/>
+                       FontWeight="Bold"
+                           Margin="4,4,4,4"/>
+                <TextBlock Text="{Binding ChatroomId, StringFormat=Room ID: {0}}"
+                       Foreground="#50000000"
+                           Margin="4,0,4,2"/>
+                <TextBlock Text="{Binding MemberCount, StringFormat=Members: {0:0}}" 
+                       Foreground="#50000000"
+                           Margin="4,0,4,6"/>
             </StackPanel>
         </DataTemplate>
     </Window.Resources>
@@ -59,11 +64,13 @@
                         <Button x:Name="btnConnect" Content="Connect" 
                                 Height="32" 
                                 Click="btnConnect_Click"/>
+                        <ProgressBar x:Name="pgbConnect" IsIndeterminate="True"
+                            Height="5" BorderThickness="1,0,1,1" Opacity="0.8"/>
 
-                        <Label x:Name="lblConnectionStatus1" Content="Connection Successful!" 
-                               Margin="0,48,0,48" HorizontalAlignment="Center" Foreground="#FF2FA856"/>
-                        <Label x:Name="lblConnectionStatus2" Content="Connection Failed...  __(:3 」∠)_" 
-                               Margin="0,48,0,48" HorizontalAlignment="Center" Foreground="#FFEE3939"/>
+                        <TextBlock x:Name="lblConnectionStatus1" 
+                               Margin="0,48,0,48" HorizontalAlignment="Center" Foreground="#FF2FA856" FontWeight="Bold" TextAlignment="Center"><Run Text="Connection Successful!"/><LineBreak/><Run FontWeight="Normal" Text="Welcome to {APPNAME}!"/><LineBreak/><Run FontWeight="Normal"/><LineBreak/><Run FontWeight="Normal" Text="Switch to the Users or Chatrooms tabs "/><LineBreak/><Run FontWeight="Normal" Text="above and start chatting right away."/></TextBlock>
+                        <TextBlock x:Name="lblConnectionStatus2" 
+                               Margin="0,48,0,48" HorizontalAlignment="Center" Foreground="#FFEE3939" FontWeight="Bold" TextAlignment="Center"><Run Text="Connection Failed...  _(:3 」∠)_"/><LineBreak/><Run FontWeight="Normal" Text="Please check the server address and your "/><LineBreak/><Run FontWeight="Normal" Text="Internet connection then try again."/></TextBlock>
 
                         <Button x:Name="btnDisconnect" Content="Disconnect" Height="32" 
                                 Click="btnDisconnect_Click"/>
@@ -72,21 +79,36 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tab_Users" Header="Online Users" 
+            <TabItem x:Name="tab_Users"
                      Width="120" Height="24" Margin="-4,-2,-2,-2">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Online Users"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <Grid>
+                    <TextBlock Text="Start a private chat with any of the users below by double-clicking their name in the list." 
+                           Foreground="#CC000000" Margin="10,10,10,529" TextWrapping="Wrap"/>
                     <ListBox x:Name="listBox_Users"
                              ItemTemplate="{DynamicResource DataTemplate_ClientList}"
-                             Margin="8,8,8,80"/>
+                             Margin="8,54,8,33"/>
+                    <TextBlock Text="0 users currently online." 
+                        Foreground="#CC000000" Margin="10,550,10,10" TextWrapping="Wrap" TextAlignment="Right"/>
                 </Grid>
             </TabItem>
 
             <TabItem x:Name="tab_Chatrooms" Header="Chatrooms" 
                      Width="120" Height="24" Margin="-6,-2,-2,-2">
                 <Grid>
+                    <TextBlock Text="Join a group chat with other users in the chatrooms listed below, or create your own chatroom." 
+                           Foreground="#CC000000" Margin="10,10,10,529" TextWrapping="Wrap"/>
                     <ListBox x:Name="listBox_Chatrooms" 
                              ItemTemplate="{DynamicResource DataTemplate_ChatroomList}" 
-                             Margin="8,8,8,80" />
+                             Margin="8,54,8,39" />
+                    <Button x:Name="button" Content="Create New Chatroom" 
+                            HorizontalAlignment="Left" Margin="8,0,0,10" Width="128" Height="24" VerticalAlignment="Bottom"/>
+                    <TextBlock Text="0 chatrooms currently active." 
+                        Foreground="#CC000000" Margin="10,550,10,10" TextWrapping="Wrap" TextAlignment="Right"/>
                 </Grid>
             </TabItem>
 

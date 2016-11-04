@@ -59,6 +59,48 @@ namespace ChatClassLibrary
         public MessageServer(IPAddress serverIP)
             : this(serverIP, ChatProtocol.ServerListeningPort) { }
 
+        private void StartFTPListener()
+        {
+            TcpListener ftpSocket = new TcpListener(this.ServerIP, FileProtocol.FtpListeningPort);
+            Thread ftpThread = new Thread(() =>
+            {
+                Console.WriteLine("Started FTP Listener Thread");
+                ftpSocket.Start();
+
+                while (true)
+                {
+                    Guid senderId;
+                    Guid targetId;
+                    string fileInfo;  // Name, size, and hash.
+                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket, 
+                        out senderId, out targetId, out fileInfo);
+                    if (received)
+                    {
+                        Console.WriteLine("File Transfer Finished.");
+
+                        // TODO: proper broadcast
+                        //foreach (var room in ChatroomHandlerTable.Values)
+                        //    room.BroadcastMessage(new Message { Type = MessageType.SystemMessage, Text = "SOMEONE UPLOADED A FILE" });
+                        Message notification = new Message
+                        {
+                            Type = MessageType.Control,
+                            ControlInfo = ControlInfo.FileAvailable,
+                            SenderId = senderId,
+                            TargetId = targetId,
+                            Text = fileInfo
+                        };
+                        if (ChatroomHandlerTable.ContainsKey(targetId))  // Sent in a group chat.
+                            ChatroomHandlerTable[targetId].BroadcastMessage(notification);
+                        else if (ClientHandlerTable.ContainsKey(targetId))  // Sent in a private chat.
+                            ClientHandlerTable[targetId].SendMessage(notification);
+                        //else // Shouldn't happen.
+                    }
+                }
+
+            });
+            ftpThread.Name = "Server FTP Listener Thread";
+            ftpThread.Start();
+        }
 
         public void StartListening()
         {
@@ -69,6 +111,7 @@ namespace ChatClassLibrary
                 SenderId = Message.NullID,
             };
 
+            this.StartFTPListener();
             this.ServerSocket.Start();
 
             Console.WriteLine("-------------------------------------------------------------------------------");
@@ -130,12 +173,13 @@ namespace ChatClassLibrary
                 };
                 handler.PrivateMessageReceived += Handler_PrivateMessageReceived;
 
-                this.ClientHandlerTable.Add(handler.ClientId, handler);
+                this.ClientHandlerTable.Add(clientId, handler);
 
                 this.publicRoom.AddClient(handler);
 
                 // TODO: send chatroom list updates
-                SendFullChatroomList(this.ClientHandlerTable.Values);
+                //SendFullChatroomList(this.ClientHandlerTable.Values);
+                SendFullClientAndChatroomList();
             }
         }
 
@@ -160,7 +204,8 @@ namespace ChatClassLibrary
             {
                 ChatroomHandlerTable[roomId].RemoveClient(client.ClientId);
 
-                SendFullChatroomList(this.ClientHandlerTable.Values);
+                //SendFullChatroomList(this.ClientHandlerTable.Values);
+                SendFullClientAndChatroomList();
             }
         }
 
@@ -174,7 +219,8 @@ namespace ChatClassLibrary
             {
                 ChatroomHandlerTable[roomId].AddClient(client);
 
-                SendFullChatroomList(this.ClientHandlerTable.Values);
+                //SendFullChatroomList(this.ClientHandlerTable.Values);
+                SendFullClientAndChatroomList();
             }
         }
 
@@ -186,6 +232,13 @@ namespace ChatClassLibrary
         private bool RemoveChatroom()
         {
             return false;
+        }
+
+        private void SendFullClientAndChatroomList()
+        {
+            SendFullChatroomList(this.ClientHandlerTable.Values);
+            foreach (var room in this.ChatroomHandlerTable.Values)
+                room.SendFullClientList(this.ClientHandlerTable.Values);
         }
 
         private void SendFullChatroomList(ICollection<ClientHandler> targets)
@@ -351,6 +404,7 @@ namespace ChatClassLibrary
             // Broadcast the new list of clients
             // TODO: more efficient way, sending only diff
             SendFullClientList(this.ClientHandlerTable.Values);
+            SendFullClientList(client);
 
             return true;
         }
