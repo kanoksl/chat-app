@@ -16,8 +16,10 @@ namespace ChatServer
     {
         public static Hashtable ClientTable = new Hashtable();
 
+        private static Dictionary<string, ClientHandler> ClientHandlerTable = new Dictionary<string, ClientHandler>();
 
-        public static IPEndPoint SelectLocalIPEndPoint(int port, bool ipv4Only = true)
+
+        public static IPAddress SelectLocalIPAddress(bool ipv4Only = true)
         {
             string localHostName = Dns.GetHostName();
             IPHostEntry ipHostInfo = Dns.GetHostEntry(localHostName);
@@ -46,39 +48,39 @@ namespace ChatServer
             }
 
             IPAddress ipAddress = ipAddressList[choice];
-            IPEndPoint endPoint = new IPEndPoint(ipAddress, ChatProtocol.ServerListeningPort);
-
-            return endPoint;
+            return ipAddress;
         }
 
         public static void Broadcast(string message, string username = null, bool showName = false)
         {
-            string sendData = showName
-                ? username + ": " + message
-                : message;
+            string sendData = showName ? username + ": " + message
+                                       : message;
 
             TcpClient broadcastSocket = null;
             NetworkStream broadcastStream = null;
 
-            foreach (DictionaryEntry item in ClientTable)
+            foreach (KeyValuePair<string, ClientHandler> entry in ClientHandlerTable)
             {
-                broadcastSocket = (TcpClient) item.Value;
+                broadcastSocket = entry.Value.Socket;
                 broadcastStream = broadcastSocket.GetStream();
 
-                ChatProtocol.SendMessage(sendData, broadcastStream);
+                ChatProtocol.SendMessage_old(sendData, broadcastStream);
             }
         }
 
         private static void DisplayClientList()
         {
-            Console.WriteLine("  Connected Clients: {0}", ClientTable.Count);
-            foreach (DictionaryEntry item in ClientTable)
-                Console.WriteLine("   |- {0} ({1})", ((TcpClient) item.Value).Client.RemoteEndPoint, item.Key);
+            Console.WriteLine("  Connected Clients: {0}", ClientHandlerTable.Count);
+            foreach (KeyValuePair<string, ClientHandler> entry in ClientHandlerTable)
+            {
+                Console.WriteLine("   |- {0} (id={1} | name={2})", entry.Value.RemoteEndPoint,
+                    entry.Key, entry.Value.DisplayName);
+            }
         }
 
         public static void RemoveClient(string clientId)
         {
-            ClientTable.Remove(clientId);
+            ClientHandlerTable.Remove(clientId);
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("  Removed Client '{0}'", clientId);
             DisplayClientList();
@@ -95,47 +97,84 @@ namespace ChatServer
         {
             Console.WriteLine("Initializing server...");
 
-            IPEndPoint localEndPoint = SelectLocalIPEndPoint(ChatProtocol.ServerListeningPort);
-            TcpListener serverSocket = new TcpListener(localEndPoint);
+            // Step 1: Set up messaging server.
+
+            IPAddress localAddress = SelectLocalIPAddress();
+            TcpListener serverSocket = new TcpListener(localAddress, ChatProtocol.ServerListeningPort);
             TcpClient clientSocket = null;
 
             serverSocket.Start();
 
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("Server started, using the following IPEndPoint:");
-            Console.WriteLine("  - IP address  = {0}", localEndPoint.Address);
-            Console.WriteLine("  - Port number = {0}", localEndPoint.Port);
+            Console.WriteLine("  - IP address  = {0}", localAddress);
+            Console.WriteLine("  - Port number = {0}", ChatProtocol.ServerListeningPort);
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine("Waiting for client...\n");
+
+            // Step 2: Set up FTP server.
+
+            TcpListener ftpSocket = new TcpListener(localAddress, FileProtocol.FtpListeningPort);
+
+            //var progressReporter = new Progress<double>();
+            //double prevProgress = 0;
+            //progressReporter.ProgressChanged += (s, progress) =>
+            //{
+            //    if (progress - prevProgress >= 10 || progress == 100)
+            //    {
+            //        Console.WriteLine("  > FILE TRANSFER PROGRESS: {0:0.00} % COMPLETED", progress);
+            //        prevProgress = progress;
+            //    }
+            //};
+
+            Thread ftpThread = new Thread(() =>
+            {
+                ftpSocket.Start();
+
+                while (true)
+                {
+                    bool received = FileProtocol.ReceiveFile(ftpSocket);
+                    if (received)
+                    {
+                        Console.WriteLine("File Transfer Finished.");
+                        Broadcast("<someone uploaded a file.>");  // TODO: know who the uploader is
+                    }
+                }
+
+            });
+            ftpThread.Name = "Server FTP Listener Thread";
+            ftpThread.Start();
+
+            // Step 3: Begin accepting client connection.
 
             while (true)
             {
                 clientSocket = serverSocket.AcceptTcpClient();
 
                 NetworkStream networkStream = clientSocket.GetStream();
-                string clientId = ChatProtocol.ReadMessage(networkStream);
-
-                if (ClientTable.Contains(clientId))
+                string clientId = ChatProtocol.ReadMessage_old(networkStream);
+                
+                if (ClientHandlerTable.ContainsKey(clientId))
                 {   // Duplicate IDs; don't allow connection.
-                    Console.WriteLine("  Client [{1}] tried to connect using ID '{0}'. The request was rejected.", 
+                    Console.WriteLine("  Client [{1}] tried to connect using ID '{0}'. The request was rejected.",
                         clientId, clientSocket.Client.RemoteEndPoint);
                     // TODO: reject client connection
+                    clientSocket.Close();
                     continue;
                 }
 
-                ClientTable.Add(clientId, clientSocket);
+                if (clientId == "exit") break; // TODO: proper exit condition
+
+                ClientHandler clientHandler = new ClientHandler(clientId, clientSocket);
+                ClientHandlerTable.Add(clientId, clientHandler);
+                clientHandler.StartThread();
 
                 Console.WriteLine("-------------------------------------------------------------------------------");
                 Console.WriteLine("  Added Client '{0}' [{1}]", clientId, clientSocket.Client.RemoteEndPoint);
                 DisplayClientList();
                 Console.WriteLine("-------------------------------------------------------------------------------");
-
-                if (clientId == "exit") break; // TODO: proper exit condition
-
+                
                 Broadcast("<client '" + clientId + "' joined the chat>");
-
-                ClientHandler clientHandler = new ClientHandler(clientId, clientSocket);
-                clientHandler.StartThread();
             }
 
             clientSocket.Close();

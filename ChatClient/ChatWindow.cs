@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,7 @@ namespace ChatClient
         private bool keepListening = true;
         private Thread listenerThread = null;
 
+        private bool formClosed = false;
 
         public ChatWindow(string defaultUsername = "user")
         {
@@ -32,6 +34,7 @@ namespace ChatClient
             // Initialize GUI data.
             tbxUsername.Text = defaultUsername;
             tbxServerAddress.Text = "127.0.0.1";
+            tbxFilePath.Text = @"D:\downloaded_big file.pdf";
 
             UpdateGui(GuiUpdateEvent.CanStartConnection);
         }
@@ -50,10 +53,11 @@ namespace ChatClient
 
                 // First message: request connection with clientId (username)
                 serverStream = clientSocket.GetStream();
-                ChatProtocol.SendMessage(clientId, serverStream);
+                ChatProtocol.SendMessage_old(clientId, serverStream);
 
                 keepListening = true;
                 listenerThread = new Thread(ListenToServer);
+                listenerThread.Name = "Server Listener";
                 listenerThread.Start();
 
                 return true;
@@ -81,7 +85,11 @@ namespace ChatClient
             {
                 try
                 {
-                    string message = ChatProtocol.ReadMessage(serverStream);
+                    string message = ChatProtocol.ReadMessage_old(serverStream);
+                    if (message == null)
+                    {
+                        throw new IOException("null data // server rejected connection");
+                    }
                     DisplayMessage(message);
                 }
                 catch (IOException)
@@ -94,7 +102,8 @@ namespace ChatClient
                     }
                     else
                     {   // Client side closed the connection.
-                        DisplayMessage("<DISCONNECTED>");
+                        if (!this.formClosed)
+                            DisplayMessage("<DISCONNECTED>");
                     }
                     return;
                 }
@@ -126,7 +135,7 @@ namespace ChatClient
 
             if (newMessage.Length > 0)
             {   // Doesn't allow empty message.
-                ChatProtocol.SendMessage(newMessage, serverStream);
+                ChatProtocol.SendMessage_old(newMessage, serverStream);
 
                 tbxMessage.Text = "";
             }
@@ -145,6 +154,51 @@ namespace ChatClient
                 btnSend_Click(sender, e);
                 e.Handled = true;
             }
+        }
+        private void btnFileBrowse_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Title = "Choose a file to upload";
+            dialog.Filter = "All Files (*.*)|*.*";
+            dialog.CheckFileExists = true;
+            dialog.InitialDirectory = @"D:\";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                tbxFilePath.Text = dialog.FileName;
+            }
+        }
+
+        private void btnUploadFile_Click(object sender, EventArgs e)
+        {
+            var progressReporter = new Progress<double>();
+            progressReporter.ProgressChanged += (s, progress) =>
+            {
+                pgbUploadProgress.Value = (int) progress;
+            };
+
+            string filePath = tbxFilePath.Text.Trim();
+            IPEndPoint serverEP = new IPEndPoint(
+                IPAddress.Parse(tbxServerAddress.Text),
+                FileProtocol.FtpListeningPort);
+
+            Thread ftpThread = new Thread(() =>
+            {
+                bool success = FileProtocol.SendFile(filePath, serverEP, progressReporter);
+                DisplayMessage(success ? "<file upload completed>"
+                                       : "<FILE UPLOAD FAILED>");
+            });
+            ftpThread.Name = "FTP Upload Thread";
+            ftpThread.Start();
+        }
+
+        private void ChatWindow_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.formClosed = true;
+            ResetConnection();
+        }
+
+        private void ChatWindow_FormClosing(object sender, FormClosingEventArgs e)
+        {
         }
 
         //--------------------------------------------------------------------------------------//
@@ -187,12 +241,14 @@ namespace ChatClient
                     tbxUsername.Enabled = true;
                     btnConnect.Enabled = true;
                     btnDisconnect.Enabled = false;
+                    btnUploadFile.Enabled = false;
                     break;
                 case GuiUpdateEvent.ConnectionSuccessful:
                     tbxServerAddress.Enabled = false;
                     tbxUsername.Enabled = false;
                     btnConnect.Enabled = false;
                     btnDisconnect.Enabled = true;
+                    btnUploadFile.Enabled = true;
                     break;
                 default:
                     break;

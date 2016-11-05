@@ -18,10 +18,10 @@ namespace ChatClient
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MultiFormContext(
-                new ChatWindow(defaultUsername: "dog"),
-                new ChatWindow(defaultUsername: "cat"),
-                new ChatWindow(defaultUsername: "pig"),
-                new ChatWindow(defaultUsername: "cow")
+                new ChatWindowV3(defaultUsername: "Aristotle"),
+                new ChatWindowV3(defaultUsername: "Stray Dog"),
+                new ChatWindowV3(defaultUsername: "Plato"),
+                new ChatWindowV3(defaultUsername: "Pythagoras")
             ));
         }
     }

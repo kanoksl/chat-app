@@ -1,0 +1,17 @@
+{
+	"folders":
+	[
+		{
+			"path": "ChatClassLibrary"
+		},
+		{
+			"path": "ChatClient"
+		},
+		{
+			"path": "ChatServer"
+		},
+		{
+			"path": "."
+		}
+	]
+}

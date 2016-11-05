@@ -1,6 +1,6 @@
 ﻿namespace ChatClient
 {
-    partial class ChatWindow
+    partial class ChatWindowV2
     {
         /// <summary>
         /// Required designer variable.
@@ -92,7 +92,6 @@
             this.tbxMessage.Name = "tbxMessage";
             this.tbxMessage.Size = new System.Drawing.Size(359, 22);
             this.tbxMessage.TabIndex = 4;
-            this.tbxMessage.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbxMessage_KeyPress);
             // 
             // label1
             // 
@@ -150,7 +149,6 @@
             this.btnUploadFile.TabIndex = 9;
             this.btnUploadFile.Text = "Upload File";
             this.btnUploadFile.UseVisualStyleBackColor = true;
-            this.btnUploadFile.Click += new System.EventHandler(this.btnUploadFile_Click);
             // 
             // btnFileBrowse
             // 
@@ -161,7 +159,6 @@
             this.btnFileBrowse.TabIndex = 11;
             this.btnFileBrowse.Text = "...";
             this.btnFileBrowse.UseVisualStyleBackColor = true;
-            this.btnFileBrowse.Click += new System.EventHandler(this.btnFileBrowse_Click);
             // 
             // pgbUploadProgress
             // 
@@ -172,7 +169,7 @@
             this.pgbUploadProgress.Size = new System.Drawing.Size(440, 13);
             this.pgbUploadProgress.TabIndex = 12;
             // 
-            // ChatWindow
+            // ChatWindowV2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -191,11 +188,9 @@
             this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.listChat);
             this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Name = "ChatWindow";
+            this.Name = "ChatWindowV2";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Chat";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ChatWindow_FormClosing);
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.ChatWindow_FormClosed);
             this.ResumeLayout(false);
             this.PerformLayout();
 
