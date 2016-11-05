@@ -23,7 +23,7 @@ namespace ChatClassLibrary
         /// <summary>
         /// Encoding for all message transfer operations.
         /// </summary>
-        public static Encoding TextEncoding => Encoding.ASCII;
+        public static Encoding TextEncoding => Encoding.UTF8;
 
         //--------------------------------------------------------------------------------------//
 

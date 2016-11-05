@@ -35,6 +35,7 @@ namespace ChatClassLibrary
 
         RequestFileUpload,        // The client wants to upload a file to server.
         RequestFileDownload,      // The client wants to download a file from server.
+        RequestFileRemove,
         RequestGranted,           // The server allowed file upload/download.
         RequestDenied,            // The server rejected file transfer request.
         FileAvailable,            // A file has been uploaded; others can download.
@@ -43,6 +44,7 @@ namespace ChatClassLibrary
         RequestChatroomList,
         ClientList,             // Message containing a list of clients in a chatroom.
         ChatroomList,           // Message containing a list of chatrooms in the server.
+        FileList,               // Message containing a list of files in a chatroom (or private chat).
 
         ClientJoinedChatroom,
         ClientLeftChatroom,
@@ -230,7 +232,9 @@ namespace ChatClassLibrary
             sb.Append("  - time recv: ").Append(this.TimeReceived).AppendLine();
             if (this.Text != null)
             {
-                sb.Append("  - content: ").Append(this.Text).AppendLine();
+                sb.Append("  - content: ---------------------------").AppendLine();
+                sb.Append(this.Text).AppendLine();
+                sb.Append("----------------------------------------").AppendLine();
                 sb.Append("  - content length (bytes): ").Append(TextEncoding.GetByteCount(this.Text));
             }
             return sb.ToString();

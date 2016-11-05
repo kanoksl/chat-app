@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -187,6 +189,28 @@ namespace ChatClassLibrary
         {
             var g = new Guid(guid);
             return g.ToString();
+        }
+
+        //--------------------------------------------------------------------------------------//
+
+        public static int FreeTcpPort()
+        {
+            TcpListener tcp = new TcpListener(IPAddress.Loopback, 0);
+            tcp.Start();
+            int port = ((IPEndPoint) tcp.LocalEndpoint).Port;
+            tcp.Stop();
+            return port;
+        }
+
+        public static IPAddress GetIPv4Address()
+        {
+            string localHostName = Dns.GetHostName();
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(localHostName);
+            List<IPAddress> ipAddressList = ipHostInfo.AddressList.ToList();
+            AddressFamily IPv4 = AddressFamily.InterNetwork;
+            ipAddressList = ipAddressList.Where(ip => ip.AddressFamily == IPv4).ToList();
+            IPAddress ipAddress = ipAddressList[0];
+            return ipAddress;
         }
     }
 }

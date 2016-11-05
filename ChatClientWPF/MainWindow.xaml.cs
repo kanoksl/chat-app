@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -31,6 +32,14 @@ namespace ChatClientWPF
             this.ChatWindows = new Dictionary<Guid, ChatWindow>();
 
             _UpdateGUI();
+
+            // Select random username for testing.
+            string[] randomNames = new string[]
+            {
+                "Alice", "Bob", "George", "Mike", "Zebra", "Mr. President", "Frederick", "Whale", "Lalilu"
+            };
+            Random random = new Random();
+            tbxUsername.Text = randomNames[random.Next(randomNames.Length)];
         }
 
         private void _Connect()
@@ -61,6 +70,7 @@ namespace ChatClientWPF
                 ClientService.PrivateMessageReceived += ClientService_PrivateMessageReceived;
 
                 ClientService.FileAvailable += ClientService_FileAvailable;
+                ClientService.FileListReceived += ClientService_FileListReceived;
 
                 ClientService.KnownChatroomsUpdated += ClientService_KnownChatroomsUpdated;
                 ClientService.KnownClientsUpdated += ClientService_KnownClientsUpdated;
@@ -76,22 +86,67 @@ namespace ChatClientWPF
             }
         }
 
+        private void ClientService_FileListReceived(object sender, MessageEventArgs e)
+        {
+            string fileList = e.Message.Text;
+            Guid chatId = e.Message.SenderId;
+
+            var list = new List<FileListLine>();
+
+            if (fileList != null && fileList.Length > 0)
+                using (var reader = new StringReader(fileList))
+                {
+                    string fileName;
+                    while ((fileName = reader.ReadLine()) != null)
+                    {
+                        string sizeStr = reader.ReadLine();
+                        string timeStr = reader.ReadLine();
+                        string uploader = reader.ReadLine();
+
+                        var size = long.Parse(sizeStr);
+                        var time = DateTime.FromBinary(long.Parse(timeStr));
+
+                        var fileEntry = new FileListLine(fileName, size, time, uploader);
+                        list.Add(fileEntry);
+                    }
+                }
+
+            if (ChatWindows.ContainsKey(chatId))
+                ChatWindows[chatId].UpdateFileList(list);
+        }
+
         private void ClientService_FileAvailable(object sender, MessageEventArgs e)
         {
-            string fileInfo = e.Message.Text;
+            string[] fileInfo = e.Message.Text.Split('\n');
             // TODO: add to GUI file list
             string uploader = ClientService.GetClientName(e.Message.SenderId);
+
+            //bool privateChat = ClientService.KnownClients.ContainsKey(e.Message.SenderId);
+            bool privateChat = false;
 
             Message notification = new Message
             {
                 Type = MessageType.SystemMessage,
                 ControlInfo = ControlInfo.None,
+                //SenderId = privateChat ? e.Message.SenderId : Message.NullID,
                 SenderId = Message.NullID,
                 TargetId = e.Message.TargetId,
                 TimeSent = DateTime.Now,
-                Text = "<Client '" + uploader + "' has uploaded a file.>"
+                Text = "Client '" + uploader + "' has uploaded '" + fileInfo[0].Trim() + "'."
             };
-            _DisplayMessage(notification);
+
+            if (privateChat)
+            {
+                ClientService_PrivateMessageReceived(sender, new MessageEventArgs(notification));
+                if (ChatWindows.ContainsKey(e.Message.SenderId))
+                    ChatWindows[e.Message.SenderId].AddFileToList(new FileListLine(
+                        fileInfo[0].Trim(),
+                        long.Parse(fileInfo[1].Trim()),
+                        DateTime.FromBinary(long.Parse(fileInfo[2].Trim())),
+                        uploader));
+            }
+            else
+                _DisplayMessage(notification);
         }
 
         private void _Disconnect()
@@ -107,12 +162,16 @@ namespace ChatClientWPF
             ClientService.MessageSendingFailed -= ClientService_MessageSendingFailed;
             ClientService.PrivateMessageReceived -= ClientService_PrivateMessageReceived;
 
+            ClientService.FileAvailable -= ClientService_FileAvailable;
+            ClientService.FileListReceived -= ClientService_FileListReceived;
+
             ClientService.KnownChatroomsUpdated -= ClientService_KnownChatroomsUpdated;
             ClientService.KnownClientsUpdated -= ClientService_KnownClientsUpdated;
 
             ClientService.ClientJoinedChatroom -= ClientService_ClientJoinedChatroom;
             ClientService.ClientLeftChatroom -= ClientService_ClientLeftChatroom;
 
+            // Remove all windows.
             ChatWindows.Clear();
 
             _UpdateGUI();
@@ -195,6 +254,9 @@ namespace ChatClientWPF
                 //        = ClientService.KnownChatrooms[roomId].MembersInfo;
                 //}
 
+                int count = ClientService.KnownClients.Count;
+                lblCountUser.Text = string.Format("{0} {1} currently online.",
+                    count, count == 1 ? "user" : "users");
                 ClientService_KnownChatroomsUpdated(sender, e);
             });
         }
@@ -208,6 +270,10 @@ namespace ChatClientWPF
 
                 foreach (var roomId in ClientService.JoinedChatrooms)
                     ChatWindows[roomId].ChatName = ClientService.GetChatroomName(roomId);
+
+                int count = ClientService.KnownChatrooms.Count;
+                lblCountRoom.Text = string.Format("{0} {1} currently active.",
+                    count, count == 1 ? "chatroom" : "chatrooms");
             });
         }
 
@@ -296,6 +362,8 @@ namespace ChatClientWPF
                 if (!connected)
                     tab_Connect.IsSelected = true;
 
+                this.Title = connected ? "Chat# - " + tbxUsername.Text.Trim() : "Chat#";
+
                 pgbConnect.IsIndeterminate = false;
                 pgbConnect.Value = connected ? 100 : 0;
             });
@@ -355,6 +423,17 @@ namespace ChatClientWPF
                 btnConnect_Click(sender, e);
                 e.Handled = true;
             }
+        }
+
+        private void btnNewRoom_Click(object sender, RoutedEventArgs e)
+        {
+            string roomName = tbxNewRoomName.Text.Trim();
+            MessageBoxResult confirm = MessageBox.Show("Create new chatroom '" + roomName + "'?", "New Chatroom", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.OK)
+                return;
+
+            ClientService.RequestCreateChatroom(roomName);
         }
     }
 }

@@ -8,6 +8,9 @@
         Title="ChatWindow" Height="540" Width="720"
         Closing="Window_Closing">
     <Window.Resources>
+        <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
         <DataTemplate x:Key="DataTemplate_ClientList">
             <StackPanel Background="Transparent">
                 <Label Content="{Binding DisplayName}" 
@@ -18,15 +21,60 @@
             </StackPanel>
         </DataTemplate>
         <GridView x:Key="ViewBase_ChatHistory">
-            <GridViewColumn Header="Time" Width="120" DisplayMemberBinding="{Binding Time, StringFormat=\{0:yyyy-MM-dd HH:mm\}}"/>
-            <GridViewColumn Header="Sender" Width="160" DisplayMemberBinding="{Binding Sender}"/>
-            <GridViewColumn Header="Message" Width="400" DisplayMemberBinding="{Binding MessageText}"/>
+            <GridViewColumn Header="Time" Width="120">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Time, StringFormat='\{0:yyyy-MM-dd HH:mm\}'}">
+                            <TextBlock.Foreground>
+                                <SolidColorBrush Color="{Binding MessageColor}"/>
+                            </TextBlock.Foreground>
+                        </TextBlock>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="Sender" Width="160">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Sender}">
+                            <TextBlock.Foreground>
+                                <SolidColorBrush Color="{Binding MessageColor}"/>
+                            </TextBlock.Foreground>
+                        </TextBlock>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="Message" Width="400">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding MessageText}">
+                            <TextBlock.Foreground>
+                                <SolidColorBrush Color="{Binding MessageColor}"/>
+                            </TextBlock.Foreground>
+                        </TextBlock>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
         </GridView>
         <GridView x:Key="ViewBase_FileList">
-            <GridViewColumn Header="File Name" Width="300"/>
-            <GridViewColumn Header="Size" Width="100"/>
-            <GridViewColumn Header="Uploaded" Width="120"/>
-            <GridViewColumn Header="Uploader" Width="120"/>
+            <GridViewColumn Header="File Name" Width="340" 
+                            DisplayMemberBinding="{Binding FileName}"/>
+            <GridViewColumn Header="Size" Width="100">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding FileSizeKB, StringFormat='\{0:#,0\} KB'}"
+                                   TextAlignment="Right"/>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="Uploaded" Width="120">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding TimeUploaded, StringFormat='\{0:yyyy-MM-dd HH:mm\}'}"
+                                   TextAlignment="Right"/>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <!--<GridViewColumn Header="Uploader" Width="120" DisplayMemberBinding="{Binding UploaderName}"/>-->
         </GridView>
     </Window.Resources>
 
@@ -38,7 +86,8 @@
                 <Grid>
                     <ListView x:Name="listView_Chat"  
                               View="{DynamicResource ViewBase_ChatHistory}"
-                              Margin="4,4,4,33">
+                              Margin="4,4,4,33"
+                              Drop="File_Drop" AllowDrop="True">
                         <!--<ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}">
                                 <Style.Triggers>
@@ -60,6 +109,7 @@
                     <Button x:Name="btnChatSend" Content="Send" 
                             Width="96" Height="24" Margin="0,0,4,4" 
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            IsEnabled="{Binding ElementName=tbxChatInput, Path=Text.Length}"
                             Click="btnChatSend_Click"/>
                 </Grid>
             </TabItem>
@@ -71,8 +121,15 @@
                               View="{DynamicResource ViewBase_FileList}"
                               Margin="4,4,4,132" />
 
-                    <Button x:Name="btnDownload" Content="Remove" Margin="0,0,4,103" Height="24" 
-                            VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"/>
+                    <ProgressBar x:Name="pgbFileDownload" Margin="4,0,206,116" Height="11" VerticalAlignment="Bottom"/>
+                    <TextBlock x:Name="lblFileDownload" Margin="4,0,206,94"  Text="Download finished: D:\tmp\file.txt" Height="19" VerticalAlignment="Bottom" FontSize="10" Opacity="0.8"/>
+
+                    <Button x:Name="btnDownloadFile" Content="Download" Margin="0,0,105,103" Height="24" 
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"
+                            Click="btnDownloadFile_Click"/>
+                    <Button x:Name="btnRemoveFile" Content="Remove" Margin="0,0,4,103" Height="24" 
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"
+                            Click="btnRemoveFile_Click"/>
 
                     <Grid Height="83" Margin="4,0,4,4"
                           VerticalAlignment="Bottom"
@@ -101,8 +158,6 @@
                         <TextBlock Text="Choose a file to upload below, or drag from other application and drop here." 
                                    HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
                     </Grid>
-                    <Button x:Name="btnDownload_Copy" Content="Download" Margin="0,0,105,103" Height="24" 
-                        VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"/>
                 </Grid>
             </TabItem>
 

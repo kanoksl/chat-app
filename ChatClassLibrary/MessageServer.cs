@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -49,7 +50,23 @@ namespace ChatClassLibrary
             this.ChatroomHandlerTable.Add(Guid.Empty, publicRoom);
             this.ChatroomHandlerTable.Add(publicRoom2.ChatroomId, publicRoom2);
 
+            this.publicRoom.ClientJoinedChatroom += Chatroom_ClientJoinedChatroom;
+            this.publicRoom2.ClientJoinedChatroom += Chatroom_ClientJoinedChatroom;
+            this.publicRoom.ChatroomBecameEmpty += Chatroom_ChatroomBecameEmpty;
+            this.publicRoom2.ChatroomBecameEmpty += Chatroom_ChatroomBecameEmpty;
+
             this.ClientHandlerTable = new Dictionary<Guid, ClientHandler>();
+        }
+
+        private void Chatroom_ChatroomBecameEmpty(object sender, ChatroomEventArgs e)
+        {
+            if (e.ChatroomId != Guid.Empty)
+                RemoveChatroom(e.ChatroomId);
+        }
+
+        private void Chatroom_ClientJoinedChatroom(object sender, ChatroomEventArgs e)
+        {
+            SendFileList(e.ChatroomId);
         }
 
         /// <summary>
@@ -71,16 +88,12 @@ namespace ChatClassLibrary
                 {
                     Guid senderId;
                     Guid targetId;
-                    string fileInfo;  // Name, size, and hash.
-                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket, 
+                    string fileInfo;  // Name, size, time, and hash.
+                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket,
                         out senderId, out targetId, out fileInfo);
                     if (received)
                     {
                         Console.WriteLine("File Transfer Finished.");
-
-                        // TODO: proper broadcast
-                        //foreach (var room in ChatroomHandlerTable.Values)
-                        //    room.BroadcastMessage(new Message { Type = MessageType.SystemMessage, Text = "SOMEONE UPLOADED A FILE" });
                         Message notification = new Message
                         {
                             Type = MessageType.Control,
@@ -89,17 +102,62 @@ namespace ChatClassLibrary
                             TargetId = targetId,
                             Text = fileInfo
                         };
-                        if (ChatroomHandlerTable.ContainsKey(targetId))  // Sent in a group chat.
-                            ChatroomHandlerTable[targetId].BroadcastMessage(notification);
-                        else if (ClientHandlerTable.ContainsKey(targetId))  // Sent in a private chat.
-                            ClientHandlerTable[targetId].SendMessage(notification);
-                        //else // Shouldn't happen.
+                        _SendMessageToThisId(targetId, notification);
+                        if (ClientHandlerTable.ContainsKey(targetId))  // Private chat.
+                            _SendMessageToThisId(senderId, notification);
+                        else  // Group chat.
+                            SendFileList(targetId);
+                    }
+                    else
+                    {
+
                     }
                 }
 
             });
             ftpThread.Name = "Server FTP Listener Thread";
             ftpThread.Start();
+        }
+
+        private void SendFileList(Guid targetId)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            string dir = ".\\" + targetId.ToString();
+            if (!Directory.Exists(dir))
+                return;
+
+            string[] fileEntries = Directory.GetFiles(dir);
+            foreach (var file in fileEntries)
+            {
+                FileInfo info = new FileInfo(file);
+                sb.Append(info.Name).AppendLine();
+                sb.Append(info.Length).AppendLine();
+                sb.Append(info.LastWriteTime.ToBinary()).AppendLine();
+                // TODO: file uploader
+                sb.AppendLine("<UNKNOWN UPLOADER>");
+            }
+
+            Message fileList = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.FileList,
+                SenderId = targetId,
+                TargetId = Message.NullID,
+                Text = sb.ToString()
+            };
+            _SendMessageToThisId(targetId, fileList);
+        }
+
+        private bool _SendMessageToThisId(Guid roomOrClientId, Message message)
+        {
+            if (ChatroomHandlerTable.ContainsKey(roomOrClientId))  // Sent in a group chat.
+                ChatroomHandlerTable[roomOrClientId].BroadcastMessage(message);
+            else if (ClientHandlerTable.ContainsKey(roomOrClientId))  // Sent in a private chat.
+                ClientHandlerTable[roomOrClientId].SendMessage(message);
+            else  // ID not found.
+                return false;
+            return true;
         }
 
         public void StartListening()
@@ -172,6 +230,9 @@ namespace ChatClassLibrary
                     DisplayClientList();
                 };
                 handler.PrivateMessageReceived += Handler_PrivateMessageReceived;
+                handler.FileRemoveRequestReceived += Handler_FileRemoveRequestReceived;
+                handler.FileDownloadRequestReceived += Handler_FileDownloadRequestReceived;
+                handler.ClientRequestCreateChatroom += Handler_ClientRequestCreateChatroom;
 
                 this.ClientHandlerTable.Add(clientId, handler);
 
@@ -180,6 +241,67 @@ namespace ChatClassLibrary
                 // TODO: send chatroom list updates
                 //SendFullChatroomList(this.ClientHandlerTable.Values);
                 SendFullClientAndChatroomList();
+            }
+        }
+
+        private void Handler_ClientRequestCreateChatroom(object sender, MessageEventArgs e)
+        {
+            Guid newRoomId = CreateChatroom(e.Message.Text);
+            ChatroomHandlerTable[newRoomId].AddClient(ClientHandlerTable[e.Message.SenderId]);
+        }
+
+        private void Handler_FileDownloadRequestReceived(object sender, MessageEventArgs e)
+        {
+            Console.WriteLine("CLIENT REQUESTED FILE DOWNLOAD");
+
+            string[] info = e.Message.Text.Split('\n');
+
+            IPAddress clientAddr = IPAddress.Parse(info[0].Trim());
+            int clientPort = int.Parse(info[1].Trim());
+            string fileName = info[2].Trim();
+            
+            string filePath = ".\\" + e.Message.TargetId.ToString() + "\\" + fileName;
+            IPEndPoint clientEP = new IPEndPoint(clientAddr, clientPort);
+
+            Thread ftpThread = new Thread(() =>
+            {
+                string log;
+                bool success = FileProtocol.SendFileExtended(filePath, clientEP,
+                    e.Message.TargetId, e.Message.SenderId, out log);
+
+                if (success)
+                    Console.WriteLine("Handler_FileDownloadRequestReceived: success");
+                else
+                    Console.WriteLine("Handler_FileDownloadRequestReceived: failed\n\t" + log);
+            });
+
+            ftpThread.Name = "FTP Thread";
+            ftpThread.Start();
+        }
+
+        private void Handler_FileRemoveRequestReceived(object sender, MessageEventArgs e)
+        {
+            ClientHandler senderClient = ClientHandlerTable[e.Message.SenderId];
+            Guid targetId = e.Message.TargetId;
+            string fileName = e.Message.Text;
+            string filePath = ".\\" + targetId + "\\" + fileName;
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+
+                Message notification = new Message
+                {
+                    Type = MessageType.SystemMessage,
+                    ControlInfo = ControlInfo.None,
+                    SenderId = Message.NullID,
+                    TargetId = targetId,
+                    Text = "Client '" + senderClient.DisplayName + "' has removed the file '" + fileName + "'."
+                };
+                _SendMessageToThisId(targetId, notification);
+                if (ClientHandlerTable.ContainsKey(targetId))  // Private chat.
+                    _SendMessageToThisId(senderClient.ClientId, notification);
+                else  // Group chat.
+                    SendFileList(targetId);
             }
         }
 
@@ -224,14 +346,36 @@ namespace ChatClassLibrary
             }
         }
 
-        private void CreateChatroom()
+        private Guid CreateChatroom(string roomName)
         {
+            ChatroomHandler room = new ChatroomHandler();
+            room.ChatroomName = roomName;
 
+            ChatroomHandlerTable.Add(room.ChatroomId, room);
+
+            room.ClientJoinedChatroom += Chatroom_ClientJoinedChatroom;
+            room.ChatroomBecameEmpty += Chatroom_ChatroomBecameEmpty;
+            
+            SendFullChatroomList(ClientHandlerTable.Values);
+
+            return room.ChatroomId;
         }
 
-        private bool RemoveChatroom()
+        private bool RemoveChatroom(Guid roomId)
         {
-            return false;
+            if (roomId == Guid.Empty)
+                return false;  // Doesn't allow removal of Public Room.
+
+            ChatroomHandlerTable.Remove(roomId);
+            if (Directory.Exists(".\\" + roomId))
+            {
+                var dir = new DirectoryInfo(".\\" + roomId);
+                dir.Delete(recursive: true);
+            }
+
+            SendFullChatroomList(ClientHandlerTable.Values);
+
+            return true;
         }
 
         private void SendFullClientAndChatroomList()
@@ -356,6 +500,7 @@ namespace ChatClassLibrary
             client.MessageReceived += Client_MessageReceived;
             client.ClientDisconnected += Client_ClientDisconnected;
 
+            this.OnClientJoinedChatroom(new ChatroomEventArgs(this.ChatroomId, this.ChatroomName));
             return true;
         }
 
@@ -405,6 +550,9 @@ namespace ChatClassLibrary
             // TODO: more efficient way, sending only diff
             SendFullClientList(this.ClientHandlerTable.Values);
             SendFullClientList(client);
+
+            if (this.ClientHandlerTable.Count == 0)
+                this.OnChatroomBecameEmpty(new ChatroomEventArgs(this.ChatroomId, this.ChatroomName));
 
             return true;
         }
@@ -468,6 +616,17 @@ namespace ChatClassLibrary
                     entry.Value.SendMessage(message);
             }
         }
+
+        public event EventHandler<ChatroomEventArgs> ClientJoinedChatroom;
+        public event EventHandler<ChatroomEventArgs> ClientLeftChatroom;
+        public event EventHandler<ChatroomEventArgs> ChatroomBecameEmpty;
+
+        protected virtual void OnClientJoinedChatroom(ChatroomEventArgs e)
+            => ClientJoinedChatroom?.Invoke(this, e);
+        protected virtual void OnClientLeftChatroom(ChatroomEventArgs e)
+            => ClientLeftChatroom?.Invoke(this, e);
+        protected virtual void OnChatroomBecameEmpty(ChatroomEventArgs e)
+            => ChatroomBecameEmpty?.Invoke(this, e);
 
     }
 
@@ -552,11 +711,26 @@ namespace ChatClassLibrary
                     Message message = ChatProtocol.ReceiveMessage(this.NetworkStream);
 
                     if (!message.IsValid)
-                        continue;
+                        this.Disconnect();
                     else if (message.ControlInfo == ControlInfo.RequestJoinChatroom)
                         this.OnClientRequestJoinChatroom(new ChatroomEventArgs(message.TargetId, null));
                     else if (message.ControlInfo == ControlInfo.RequestLeaveChatroom)
                         this.OnClientRequestLeaveChatroom(new ChatroomEventArgs(message.TargetId, null));
+                    else if (message.ControlInfo == ControlInfo.RequestFileRemove)
+                    {
+                        this.OnFileRemoveRequestReceived(new MessageEventArgs(message));
+                        continue;
+                    }
+                    else if (message.ControlInfo == ControlInfo.RequestFileDownload)
+                    {
+                        this.OnFileDownloadRequestReceived(new MessageEventArgs(message));
+                        continue;
+                    }
+                    else if (message.ControlInfo == ControlInfo.RequestCreateChatroom)
+                    {
+                        this.OnClientRequestCreateChatroom(new MessageEventArgs(message));
+                        continue;
+                    }
 
                     if (message.Type == MessageType.UserPrivateMessage)
                         this.OnPrivateMessageReceived(new MessageEventArgs(message));
@@ -581,8 +755,12 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
         public event EventHandler<MessageEventArgs> PrivateMessageReceived;
 
+        public event EventHandler<MessageEventArgs> FileDownloadRequestReceived;
+        public event EventHandler<MessageEventArgs> FileRemoveRequestReceived;
+
         public event EventHandler<ChatroomEventArgs> ClientRequestJoinChatroom;
         public event EventHandler<ChatroomEventArgs> ClientRequestLeaveChatroom;
+        public event EventHandler<MessageEventArgs> ClientRequestCreateChatroom;
 
         public event EventHandler<ConnectionEventArgs> ClientDisconnected;
 
@@ -597,10 +775,17 @@ namespace ChatClassLibrary
         protected virtual void OnPrivateMessageReceived(MessageEventArgs e)
             => PrivateMessageReceived?.Invoke(this, e);
 
+        protected virtual void OnFileDownloadRequestReceived(MessageEventArgs e)
+            => FileDownloadRequestReceived?.Invoke(this, e);
+        protected virtual void OnFileRemoveRequestReceived(MessageEventArgs e)
+            => FileRemoveRequestReceived?.Invoke(this, e);
+
         protected virtual void OnClientRequestJoinChatroom(ChatroomEventArgs e)
             => ClientRequestJoinChatroom?.Invoke(this, e);
         protected virtual void OnClientRequestLeaveChatroom(ChatroomEventArgs e)
             => ClientRequestLeaveChatroom?.Invoke(this, e);
+        protected virtual void OnClientRequestCreateChatroom(MessageEventArgs e)
+            => ClientRequestCreateChatroom?.Invoke(this, e);
 
         protected virtual void OnClientDisconnected(ConnectionEventArgs e)
             => ClientDisconnected?.Invoke(this, e);
@@ -609,4 +794,5 @@ namespace ChatClassLibrary
         //--------------------------------------------------------------------------------------//
 
     }
+
 }

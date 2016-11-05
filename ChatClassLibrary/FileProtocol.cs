@@ -212,7 +212,7 @@ namespace ChatClassLibrary
         /// <param name="progress">Progress reporter.</param>
         /// <returns></returns>
         public static bool SendFileExtended(string filePath, IPEndPoint receiverEP,
-            Guid senderId, Guid targetId, IProgress<double> progress = null)
+            Guid senderId, Guid targetId, out string log, IProgress<double> progress = null)
         {
             TcpClient receiverSocket = new TcpClient();
             NetworkStream receiverStream = null;
@@ -258,6 +258,7 @@ namespace ChatClassLibrary
                 {
                     string message = TextEncoding.GetString(response, 1, response.Length - 1);
                     _Log("Receiver rejected file transfer request. Reason: " + message);
+                    log = "Receiver rejected file transfer request. Reason: " + message;
                     return false;
                 }
 
@@ -288,11 +289,13 @@ namespace ChatClassLibrary
 
                 fileStream.Close();
 
+                log = "OK";
                 return true;
             }
             catch (Exception ex)
             {
                 _Log("Exception caught: " + ex.Message);
+                log = "Exception caught: " + ex.Message;
                 return false;
             }
             finally
@@ -304,29 +307,24 @@ namespace ChatClassLibrary
 
         public static bool ReceiveFileExtended(TcpListener listenerSocket,
             out Guid senderId, out Guid targetId, out string fileInfo,
-            IProgress<double> progress = null)
+            string savePath = null, IProgress<double> progress = null)
         {
             TcpClient senderSocket = listenerSocket.AcceptTcpClient();
             NetworkStream stream = senderSocket.GetStream();
             StringBuilder sb = new StringBuilder();
 
             // Step 1: Receive information about the file.
-            byte[] infoPacket = new byte[32+280];
+            byte[] infoPacket = new byte[32 + 280];
             stream.Read(infoPacket, 0, infoPacket.Length);
 
             senderId = new Guid(Utility.Slice(infoPacket, 0, 16));
             targetId = new Guid(Utility.Slice(infoPacket, 16, 16));
 
             string fileName = TextEncoding.GetString(infoPacket, 32, 256).Trim('\0');
-            long fileLength = Utility.BytesToInt64(Utility.Slice(infoPacket, 32+256, 8));
-            byte[] fileHash = Utility.Slice(infoPacket, 32+264, 16);
+            long fileLength = Utility.BytesToInt64(Utility.Slice(infoPacket, 32 + 256, 8));
+            byte[] fileHash = Utility.Slice(infoPacket, 32 + 264, 16);
             string fileHashStr = Utility.ToHashString(fileHash);
-
-            sb.AppendLine(fileName)
-                .AppendLine(fileLength.ToString())
-                .AppendLine(fileHashStr);
-            fileInfo = sb.ToString();
-
+            
             _Log("Received a sender/file information packet");
             _Log(" SenderID = " + senderId.ToString());
             _Log(" TargetID = " + targetId.ToString());
@@ -334,10 +332,27 @@ namespace ChatClassLibrary
             _Log(" FileSize = {0} bytes", fileLength);
             _Log(" FileHash = " + fileHashStr);
 
+            sb.AppendLine(fileName)
+                .AppendLine(fileLength.ToString())
+                .AppendLine(DateTime.Now.ToBinary().ToString())
+                .AppendLine(fileHashStr);
+            fileInfo = sb.ToString();
+
+            if (savePath == null)
+            {   // The server program will not set savePath.
+                string saveFolder = ".\\" + targetId.ToString();
+                Directory.CreateDirectory(saveFolder);  // Create the save folder if not exists
+                savePath = saveFolder + "\\" + fileName;
+            }
+            else  // The client program will let user select savePath.
+            {   // Already included the file name.
+                //savePath = savePath + "\\" + fileName;
+            }
+
             // Step 2: Respond whether to accept or reject the file.
 
             byte[] response = new byte[256];
-            bool accept = true;  // TODO: conditions for rejecting file upload
+            bool accept = !File.Exists(savePath);  // TODO: conditions for rejecting file upload
 
             if (accept)
             {
@@ -347,7 +362,7 @@ namespace ChatClassLibrary
             else
             {
                 response[0] = 0;
-                string message = "I don't want this file.";
+                string message = "Duplicated file name.";
                 TextEncoding.GetBytes(message, 0, message.Length, response, 1);
                 stream.Write(response, 0, response.Length);
 
@@ -357,13 +372,11 @@ namespace ChatClassLibrary
             // Step 3: Start the actual file transfer.
 
             progress?.Report(0);  // 0% complete.
-
-            string saveFilePath = @"D:\tmp\ftp\" + fileName;  // TODO: configurable save path
-
+            
             _Log("Receiving a file of length = {0} bytes", fileLength);
-            _Log(" (Save to {0})", saveFilePath);
+            _Log(" (Save to {0})", savePath);
 
-            FileStream fileStream = new FileStream(saveFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+            FileStream fileStream = new FileStream(savePath, FileMode.OpenOrCreate, FileAccess.Write);
             long readLength = 0;
             int packetCount = 0;
 
@@ -390,13 +403,17 @@ namespace ChatClassLibrary
 
             // Step 4 (optional): Check the downloaded file's checksum
 
-            byte[] downloadedFileHash = Utility.CalculateMD5(saveFilePath);  // 16 bytes.
+            byte[] downloadedFileHash = Utility.CalculateMD5(savePath);  // 16 bytes.
             _Log(" Hash (Downloaded)  = " + Utility.ToHashString(downloadedFileHash));
             _Log(" Hash (From Sender) = " + Utility.ToHashString(fileHash));
             // TODO: if hashes differ
             if (!Enumerable.SequenceEqual(fileHash, downloadedFileHash))
             {
-                _Log("WARNING: hash differs from original; the downloaded file is damaged.");
+                _Log("ERROR: hash differs from original; the downloaded file is damaged.");
+                // Delete the file.
+                if (File.Exists(savePath))
+                    File.Delete(savePath);
+                return false;
             }
 
             return true;

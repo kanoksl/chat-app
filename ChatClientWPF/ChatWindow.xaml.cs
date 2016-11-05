@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,6 +60,10 @@ namespace ChatClientWPF
             this.ChatHistory = new ObservableCollection<MessageLine>();
             listView_Chat.ItemsSource = ChatHistory;
 
+            lblFileDownload.Text = "";
+            tbxFilePath.Text = "";
+
+            tab_Files.Visibility = privateChat ? Visibility.Collapsed : Visibility.Visible;
             tab_More.Visibility = privateChat ? Visibility.Collapsed : Visibility.Visible;
         }
 
@@ -101,28 +107,12 @@ namespace ChatClientWPF
             });
         }
 
-        private class MessageLine
-        {
-            public DateTime Time { get; set; }
-            public string Sender { get; set; }
-            public string MessageText { get; set; }
-            public MessageLine(DateTime time, string sender, string text)
-            {
-                this.Time = time;
-                this.Sender = sender;
-                this.MessageText = text;
-            }
-
-            public string Color
-                => Sender == "<SERVER>" ? "Red" 
-                   : Sender == "<YOU>" ? "Blue" 
-                   : "Black";
-              
-        }
-
         private void btnChatSend_Click(object sender, RoutedEventArgs e)
         {
-            string messageText = tbxChatInput.Text.Trim();
+            string messageText = tbxChatInput.Text;
+            if (messageText.Length == 0)
+                return;
+
             ClientService?.SendMessage(messageText, this.ChatId, this.PrivateMode);
 
             tbxChatInput.Text = "";
@@ -146,6 +136,12 @@ namespace ChatClientWPF
 
         private void btnLeaveChatroom_Click(object sender, RoutedEventArgs e)
         {
+            MessageBoxResult confirm = MessageBox.Show("Are you sure you want to leave this chatroom?\n"
+                + "If the chatroom becomes empty, it will be removed from the server, along with the shared files.", "Leave Chatroom", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
             ClientService?.RequestLeaveChatroom(this.ChatId);
         }
 
@@ -159,31 +155,61 @@ namespace ChatClientWPF
 
         private void File_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                string[] files = (string[]) e.Data.GetData(DataFormats.FileDrop);
-                tbxFilePath.Text = files[0];
-            }
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+
+            this.tab_Files.IsSelected = true;
+            var files = (string[]) e.Data.GetData(DataFormats.FileDrop);
+            this.tbxFilePath.Text = files?[0];
         }
 
         private void btnBrowse_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog();
-            dialog.Title = "Choose a file to upload";
-            dialog.Filter = "All Files (*.*)|*.*";
-            dialog.CheckFileExists = true;
-            dialog.InitialDirectory = @"D:\";
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Choose a file to upload",
+                Filter = "All Files (*.*)|*.*",
+                CheckFileExists = true,
+                InitialDirectory = @"D:\"
+            };
 
             bool? result = dialog.ShowDialog();
 
             if (result == true)
             {
-                tbxFilePath.Text = dialog.FileName;
+                this.tbxFilePath.Text = dialog.FileName;
             }
+        }
+
+        private bool _currentlyUploading = false;
+        private Thread _ftpThread = null;
+        private void _UpdateFileUploaderGUI(bool? uploadSuccess = null)
+        {
+            this.Dispatcher.Invoke(() =>
+            {   // Called from different thread.
+                tbxFilePath.IsEnabled = !_currentlyUploading;
+                btnBrowse.IsEnabled = !_currentlyUploading;
+                btnUpload.Content = _currentlyUploading ? "Cancel" : "Upload";
+                if (uploadSuccess.HasValue)
+                    pgbFileUpload.Value = uploadSuccess.Value ? pgbFileUpload.Maximum : 0;
+            });
         }
 
         private void btnUpload_Click(object sender, RoutedEventArgs e)
         {
+            if (_currentlyUploading)
+            {   // Cancel the upload.
+                this._ftpThread.Abort();
+                _currentlyUploading = false;
+                _UpdateFileUploaderGUI(false);
+                return;
+            }
+
+            if (!File.Exists(tbxFilePath.Text.Trim()))
+            {
+                MessageBox.Show("Local file not found: " + tbxFilePath.Text.Trim(), "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             var progressReporter = new Progress<double>();
             progressReporter.ProgressChanged += (s, progress) =>
             {
@@ -197,21 +223,188 @@ namespace ChatClientWPF
 
             Thread ftpThread = new Thread(() =>
             {
-                bool success = FileProtocol.SendFileExtended(filePath, serverEP, 
-                    ClientService.ClientId, this.ChatId, progressReporter);
-                //Message result = new Message
-                //{
-                //    Type = MessageType.SystemMessage,
-                //    ControlInfo = ControlInfo.None,
-                //    TimeSent = DateTime.Now,
-                //    Text = success ? "<file upload completed>" : "<FILE UPLOAD FAILED>"
-                //};
-                //DisplayMessage(result);
-                MessageBox.Show("The file has finished uploading.", "File Upload", MessageBoxButton.OK, MessageBoxImage.Information);
-            });
+                _currentlyUploading = true;
+                _UpdateFileUploaderGUI();
 
+                string log;
+                bool success = FileProtocol.SendFileExtended(filePath, serverEP,
+                    ClientService.ClientId, this.ChatId, out log, progressReporter);
+
+                _currentlyUploading = false;
+                _UpdateFileUploaderGUI(success);
+
+                if (success)
+                    MessageBox.Show("The file has finished uploading.", "File Upload", MessageBoxButton.OK, MessageBoxImage.Information);
+                else
+                    MessageBox.Show(log, "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
+            });
+            this._ftpThread = ftpThread;
             ftpThread.Name = "FTP Upload Thread";
             ftpThread.Start();
+        }
+
+        private ObservableCollection<FileListLine> _fileList = new ObservableCollection<FileListLine>();
+
+        public void UpdateFileList(List<FileListLine> fileList)
+        {
+            this.Dispatcher.Invoke(() =>
+            {   // Called from different thread.
+                listView_Files.ItemsSource = null;
+                _fileList.Clear();
+                foreach (var file in fileList)
+                    _fileList.Add(file);
+                listView_Files.ItemsSource = _fileList;
+            });
+        }
+
+        public void AddFileToList(FileListLine file)
+        {
+            this.Dispatcher.Invoke(() =>
+            {   // Called from different thread.
+                _fileList.Add(file);
+                if (listView_Files.ItemsSource != _fileList)
+                    listView_Files.ItemsSource = _fileList;
+            });
+        }
+
+        private class MessageLine
+        {
+            public DateTime Time { get; set; }
+            public string Sender { get; set; }
+            public string MessageText { get; set; }
+            public MessageLine(DateTime time, string sender, string text)
+            {
+                this.Time = time;
+                this.Sender = sender;
+                this.MessageText = text;
+            }
+
+            public string MessageColor
+                => Sender == "<SERVER>" ? "#CB000000"
+                   : Sender == "<YOU>" ? "#FF109020" : "#FF102090";
+            //public string BackColor
+            //    => Sender == "<SERVER>" ? "#FFDEDEDE" : "Transparent";
+        }
+
+        private void btnDownloadFile_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = ((FileListLine) listView_Files.SelectedItem).FileName;
+            string savePath;
+
+            var dialog = new Microsoft.Win32.SaveFileDialog();
+            dialog.Title = "Choose where to save the downloaded file";
+            dialog.FileName = fileName;
+            dialog.Filter = "All Files (*.*)|*.*";
+            dialog.CheckFileExists = false;
+            dialog.InitialDirectory = @"D:\";
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                savePath = dialog.FileName;
+                if (File.Exists(savePath))
+                    File.Delete(savePath);
+            }
+            else
+            {   // User canceled.
+                return;
+            }
+
+            IPAddress addr = Utility.GetIPv4Address();
+            int port = Utility.FreeTcpPort();
+            TcpListener ftpSocket = new TcpListener(addr, port);
+
+            var progressReporter = new Progress<double>();
+            progressReporter.ProgressChanged += (s, progress) =>
+            {
+                pgbFileDownload.Value = (int) progress;
+            };
+
+            Thread ftpThread = new Thread(() =>
+            {
+                Console.WriteLine("Started FTP Download Listener Thread");
+                ftpSocket.Start();
+
+                while (true)
+                {
+                    Guid senderId;
+                    Guid targetId;
+                    string fileInfo;  // Name, size, time, and hash.
+                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket,
+                        out senderId, out targetId, out fileInfo, savePath, progressReporter);
+                    if (received)
+                    {
+                        Console.WriteLine("File Transfer Finished.");
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show("Download finished.", "File Download", MessageBoxButton.OK, MessageBoxImage.Information);
+                            pgbFileDownload.Value = pgbFileDownload.Maximum;
+                            lblFileDownload.Text = "Download finished: " + savePath;
+                        });
+                        break;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Error occured while downloading. Please try again.", "File Download", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                ftpSocket.Stop();
+            });
+            ftpThread.Name = "FTP Download Listener Thread";
+            ftpThread.Start();
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append(addr.ToString()).AppendLine();
+            sb.Append(port).AppendLine();
+            sb.Append(fileName);
+
+            Message fileRequest = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.RequestFileDownload,
+                SenderId = ClientService.ClientId,
+                TargetId = this.ChatId,
+                Text = sb.ToString()
+            };
+            ChatProtocol.SendMessage(fileRequest, ClientService.NetworkStream);
+        }
+
+        private void btnRemoveFile_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = ((FileListLine) listView_Files.SelectedItem).FileName;
+            MessageBoxResult confirm = MessageBox.Show("Request the server to remove this file?\n    " + fileName, "File Sharing", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            Message removeRequest = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.RequestFileRemove,
+                SenderId = ClientService.ClientId,
+                TargetId = this.ChatId,
+                Text = fileName
+            };
+            ChatProtocol.SendMessage(removeRequest, ClientService.NetworkStream);
+        }
+    }
+
+    public class FileListLine
+    {
+        public string FileName { get; set; }
+        public long FileSize { get; set; }
+        public long FileSizeKB { get; set; }
+        public DateTime TimeUploaded { get; set; }
+        public string UploaderName { get; set; }
+
+        public FileListLine(string fileName, long fileSize, DateTime timeUploaded, string uploaderName)
+        {
+            this.FileName = fileName;
+            this.FileSize = fileSize;
+            this.FileSizeKB = (long) Math.Ceiling((double) fileSize / 1024);
+            this.TimeUploaded = timeUploaded;
+            this.UploaderName = uploaderName;
         }
     }
 }
