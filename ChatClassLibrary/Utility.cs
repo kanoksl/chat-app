@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ChatClassLibrary
 {
     public static class Utility
     {
+        #region Byte-Array Converters
+
         /// <summary>
         /// Convert a 32-bit integer to an array of 4 bytes (using big endian).
         /// </summary>
@@ -28,7 +27,7 @@ namespace ChatClassLibrary
         /// <summary>
         /// Convert a 64-bit integer to an array of 8 bytes (using big endian).
         /// </summary>
-        /// <param name="value">Integer value to be converted.</param>
+        /// <param name="value">Long integer value to be converted.</param>
         /// <returns>A byte array of length 8.</returns>
         public static byte[] ToByteArray(long value)
         {
@@ -37,11 +36,12 @@ namespace ChatClassLibrary
                 Array.Reverse(bytes);
             return bytes;
         }
-        
+
         /// <summary>
-        /// Convert the first 4 bytes of an array to a 32-bit integer.
+        /// Convert 4 bytes of an array to a 32-bit integer.
         /// </summary>
         /// <param name="bytes">Byte array to convert.</param>
+        /// <param name="startIndex">The position of the 4 bytes to convert.</param>
         /// <returns>A 32-bit integer.</returns>
         public static int BytesToInt32(byte[] bytes, int startIndex = 0)
         {
@@ -51,15 +51,16 @@ namespace ChatClassLibrary
                 Array.Copy(bytes, startIndex, newBytes, 0, 4);
                 Array.Reverse(newBytes);
                 bytes = newBytes;
+                startIndex = 0;
             }
-            int value = BitConverter.ToInt32(bytes, 0);
-            return value;
+            return BitConverter.ToInt32(bytes, startIndex);
         }
-        
+
         /// <summary>
         /// Convert the first 8 bytes of an array to a 64-bit integer.
         /// </summary>
         /// <param name="bytes">Byte array to convert.</param>
+        /// <param name="startIndex">The position of the 8 bytes to convert.</param>
         /// <returns>A 64-bit integer.</returns>
         public static long BytesToInt64(byte[] bytes, int startIndex = 0)
         {
@@ -69,12 +70,16 @@ namespace ChatClassLibrary
                 Array.Copy(bytes, startIndex, newBytes, 0, 8);
                 Array.Reverse(newBytes);
                 bytes = newBytes;
+                startIndex = 0;
             }
-            long value = BitConverter.ToInt64(bytes, 0);
-            return value;
+            return BitConverter.ToInt64(bytes, startIndex);
         }
 
+        #endregion
+
         //--------------------------------------------------------------------------------------//
+
+        #region Array Manipulations
 
         /// <summary>
         /// Concatenate two arrays of same type.
@@ -95,16 +100,15 @@ namespace ChatClassLibrary
         /// Concatenate multiple arrays of same type.
         /// </summary>
         /// <typeparam name="T">Can be any type.</typeparam>
-        /// <param name="arr">Arrays to be concatenated.</param>
+        /// <param name="arrays">Arrays to be concatenated.</param>
         /// <returns>A new array resulted from concatenating the input arrays in the given order.</returns>
-        public static T[] Concat<T>(params T[][] arr)
+        public static T[] Concat<T>(params T[][] arrays)
         {
-            int totalLength = 0;
-            foreach (T[] a in arr) totalLength += a.Length;
+            int totalLength = arrays.Sum(a => a.Length);
 
             var z = new T[totalLength];
             int offset = 0;
-            foreach (T[] a in arr)
+            foreach (var a in arrays)
             {
                 a.CopyTo(z, offset);
                 offset += a.Length;
@@ -128,21 +132,11 @@ namespace ChatClassLibrary
             return slice;
         }
 
+        #endregion
+
         //--------------------------------------------------------------------------------------//
 
-        /// <summary>
-        /// Calculate the MD5 checksum of a given stream as a byte array.
-        /// </summary>
-        /// <param name="stream">The input to compute the hash code for.</param>
-        /// <returns>A byte array of length 16 containing the hash.</returns>
-        public static byte[] CalculateMD5(Stream stream)
-        {
-            using (var hasher = MD5.Create())
-            {
-                byte[] hash = hasher.ComputeHash(stream);
-                return hash;
-            }
-        }
+        #region File Hashing (MD5)
 
         /// <summary>
         /// Calculate the MD5 checksum of a file as a byte array.
@@ -169,48 +163,39 @@ namespace ChatClassLibrary
             return BitConverter.ToString(hash).Replace("-", "").ToLower();
         }
 
-        //--------------------------------------------------------------------------------------//
-
-        /// <summary>
-        /// Generate a new GUID.
-        /// </summary>
-        /// <returns>A byte array of length 16 containing the GUID value.</returns>
-        public static byte[] NewGuid()
-        {
-            return Guid.NewGuid().ToByteArray();
-        }
-
-        /// <summary>
-        /// Convert a byte-array GUID to standard-looking string.
-        /// </summary>
-        /// <param name="guid">A 16-byte GUID array.</param>
-        /// <returns>The string representation of the GUID.</returns>
-        public static string ToGuidString(byte[] guid)
-        {
-            var g = new Guid(guid);
-            return g.ToString();
-        }
+        #endregion
 
         //--------------------------------------------------------------------------------------//
 
+        #region Networking (Ports and IP Addresses)
+
+        /// <summary>
+        /// Find a free TCP/IP port tthat can be used with TcpListener or similar.
+        /// </summary>
+        /// <returns>An integer value that is the free port number.</returns>
         public static int FreeTcpPort()
         {
-            TcpListener tcp = new TcpListener(IPAddress.Loopback, 0);
-            tcp.Start();
-            int port = ((IPEndPoint) tcp.LocalEndpoint).Port;
-            tcp.Stop();
+            var tcpListener = new TcpListener(IPAddress.Loopback, 0);
+            tcpListener.Start();
+            int port = ((IPEndPoint) tcpListener.LocalEndpoint).Port;
+            tcpListener.Stop();
             return port;
         }
 
+        /// <summary>
+        /// Get the IPv4 address of this computer (for addressing in LAN).
+        /// </summary>
+        /// <returns>An IPv4 address.</returns>
         public static IPAddress GetIPv4Address()
         {
-            string localHostName = Dns.GetHostName();
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(localHostName);
-            List<IPAddress> ipAddressList = ipHostInfo.AddressList.ToList();
-            AddressFamily IPv4 = AddressFamily.InterNetwork;
-            ipAddressList = ipAddressList.Where(ip => ip.AddressFamily == IPv4).ToList();
-            IPAddress ipAddress = ipAddressList[0];
-            return ipAddress;
+            var localHostName = Dns.GetHostName();
+            var ipHostInfo = Dns.GetHostEntry(localHostName);
+            var ipAddressList = ipHostInfo.AddressList.ToList();
+            ipAddressList = ipAddressList.Where(ip =>
+                    ip.AddressFamily == AddressFamily.InterNetwork).ToList();
+            return ipAddressList[0];
         }
+
+        #endregion
     }
 }

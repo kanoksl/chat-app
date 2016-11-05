@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 using ChatClassLibrary;
+using ChatClassLibrary.Protocols;
 
 namespace ChatClientWPF
 {
@@ -128,8 +129,8 @@ namespace ChatClientWPF
             {
                 Type = MessageType.SystemMessage,
                 ControlInfo = ControlInfo.None,
-                //SenderId = privateChat ? e.Message.SenderId : Message.NullID,
-                SenderId = Message.NullID,
+                //SenderId = privateChat ? e.Message.SenderId : Message.NullId,
+                SenderId = ProtocolSettings.NullId,
                 TargetId = e.Message.TargetId,
                 TimeSent = DateTime.Now,
                 Text = "Client '" + uploader + "' has uploaded '" + fileInfo[0].Trim() + "'."
@@ -230,7 +231,7 @@ namespace ChatClientWPF
                 _DisplayMessage(new Message
                 {
                     Type = MessageType.Control,
-                    SenderId = Message.NullID,
+                    SenderId = ProtocolSettings.NullId,
                     TargetId = e.ChatroomId,
                     TimeSent = DateTime.Now,
                     Text = "You are now a member of this chatroom."

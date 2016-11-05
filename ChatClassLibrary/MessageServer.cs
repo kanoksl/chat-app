@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using ChatClassLibrary.Protocols;
+
 namespace ChatClassLibrary
 {
     public class MessageServer
@@ -74,11 +76,11 @@ namespace ChatClassLibrary
         /// </summary>
         /// <param name="serverIP">IP address of the local machine to use.</param>
         public MessageServer(IPAddress serverIP)
-            : this(serverIP, ChatProtocol.ServerListeningPort) { }
+            : this(serverIP, ProtocolSettings.ChatProtocolPort) { }
 
         private void StartFTPListener()
         {
-            TcpListener ftpSocket = new TcpListener(this.ServerIP, FileProtocol.FtpListeningPort);
+            TcpListener ftpSocket = new TcpListener(this.ServerIP, ProtocolSettings.FileProtocolPort);
             Thread ftpThread = new Thread(() =>
             {
                 Console.WriteLine("Started FTP Listener Thread");
@@ -89,7 +91,7 @@ namespace ChatClassLibrary
                     Guid senderId;
                     Guid targetId;
                     string fileInfo;  // Name, size, time, and hash.
-                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket,
+                    bool received = FileProtocol.ReceiveFile(ftpSocket,
                         out senderId, out targetId, out fileInfo);
                     if (received)
                     {
@@ -141,9 +143,9 @@ namespace ChatClassLibrary
             Message fileList = new Message
             {
                 Type = MessageType.Control,
-                ControlInfo = ControlInfo.FileList,
+                ControlInfo = ControlInfo.ListOfFiles,
                 SenderId = targetId,
-                TargetId = Message.NullID,
+                TargetId = ProtocolSettings.NullId,
                 Text = sb.ToString()
             };
             _SendMessageToThisId(targetId, fileList);
@@ -166,7 +168,7 @@ namespace ChatClassLibrary
             Message reply = new Message
             {
                 Type = MessageType.Control,
-                SenderId = Message.NullID,
+                SenderId = ProtocolSettings.NullId,
             };
 
             this.StartFTPListener();
@@ -266,7 +268,7 @@ namespace ChatClassLibrary
             Thread ftpThread = new Thread(() =>
             {
                 string log;
-                bool success = FileProtocol.SendFileExtended(filePath, clientEP,
+                bool success = FileProtocol.SendFile(filePath, clientEP,
                     e.Message.TargetId, e.Message.SenderId, out log);
 
                 if (success)
@@ -293,7 +295,7 @@ namespace ChatClassLibrary
                 {
                     Type = MessageType.SystemMessage,
                     ControlInfo = ControlInfo.None,
-                    SenderId = Message.NullID,
+                    SenderId = ProtocolSettings.NullId,
                     TargetId = targetId,
                     Text = "Client '" + senderClient.DisplayName + "' has removed the file '" + fileName + "'."
                 };
@@ -398,9 +400,9 @@ namespace ChatClassLibrary
             Message roomList = new Message
             {
                 Type = MessageType.Control,
-                ControlInfo = ControlInfo.ChatroomList,
-                SenderId = Message.NullID,
-                TargetId = Message.NullID,  // No need to be specific?
+                ControlInfo = ControlInfo.ListOfChatrooms,
+                SenderId = ProtocolSettings.NullId,
+                TargetId = ProtocolSettings.NullId,  // No need to be specific?
                 Text = sb.ToString()
             };
 
@@ -574,9 +576,9 @@ namespace ChatClassLibrary
             Message clientList = new Message
             {
                 Type = MessageType.Control,
-                ControlInfo = ControlInfo.ClientList,
+                ControlInfo = ControlInfo.ListOfClients,
                 SenderId = this.ChatroomId,
-                TargetId = Message.NullID,  // No need to be specific?
+                TargetId = ProtocolSettings.NullId,  // No need to be specific?
                 Text = sb.ToString()
             };
 

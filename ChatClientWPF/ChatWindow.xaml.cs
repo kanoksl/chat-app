@@ -19,6 +19,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 using ChatClassLibrary;
+using ChatClassLibrary.Protocols;
 
 namespace ChatClientWPF
 {
@@ -91,7 +92,7 @@ namespace ChatClientWPF
             Guid senderId = message.SenderId;
             string senderName = "-";
 
-            if (senderId == Message.NullID || message.Type == MessageType.Control)
+            if (senderId == ProtocolSettings.NullId || message.Type == MessageType.Control)
                 senderName = "<SERVER>";
             else if (senderId == ClientService.ClientId)
                 senderName = "<YOU>";
@@ -219,7 +220,7 @@ namespace ChatClientWPF
             string filePath = tbxFilePath.Text.Trim();
             IPEndPoint serverEP = new IPEndPoint(
                 ClientService.ServerEndPoint.Address,
-                FileProtocol.FtpListeningPort);
+                ProtocolSettings.FileProtocolPort);
 
             Thread ftpThread = new Thread(() =>
             {
@@ -227,7 +228,7 @@ namespace ChatClientWPF
                 _UpdateFileUploaderGUI();
 
                 string log;
-                bool success = FileProtocol.SendFileExtended(filePath, serverEP,
+                bool success = FileProtocol.SendFile(filePath, serverEP,
                     ClientService.ClientId, this.ChatId, out log, progressReporter);
 
                 _currentlyUploading = false;
@@ -331,7 +332,7 @@ namespace ChatClientWPF
                     Guid senderId;
                     Guid targetId;
                     string fileInfo;  // Name, size, time, and hash.
-                    bool received = FileProtocol.ReceiveFileExtended(ftpSocket,
+                    bool received = FileProtocol.ReceiveFile(ftpSocket,
                         out senderId, out targetId, out fileInfo, savePath, progressReporter);
                     if (received)
                     {

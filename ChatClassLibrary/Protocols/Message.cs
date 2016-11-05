@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ChatClassLibrary
+namespace ChatClassLibrary.Protocols
 {
     public enum MessageType
     {
@@ -29,35 +26,32 @@ namespace ChatClassLibrary
     public enum ControlInfo
     {
         None,                     // Data message, not control message.
+
         ClientRequestConnection,  // The client wants to connect to server.
         ConnectionAccepted,       // The server accepted connection.
         ConnectionRejected,       // The server rejected connection.
 
-        RequestFileUpload,        // The client wants to upload a file to server.
+        RequestFileUpload,        // The client wants to upload a file to server. Currently not used.
         RequestFileDownload,      // The client wants to download a file from server.
-        RequestFileRemove,
-        RequestGranted,           // The server allowed file upload/download.
-        RequestDenied,            // The server rejected file transfer request.
-        FileAvailable,            // A file has been uploaded; others can download.
-
-        RequestClientList,
-        RequestChatroomList,
-        ClientList,             // Message containing a list of clients in a chatroom.
-        ChatroomList,           // Message containing a list of chatrooms in the server.
-        FileList,               // Message containing a list of files in a chatroom (or private chat).
-
-        ClientJoinedChatroom,
-        ClientLeftChatroom,
+        RequestFileRemove,        // The client wants to delete a file from server.
+        FileAvailable,            // A file has been uploaded. Message contains file info.
+        
+        ListOfClients,            // Message containing a list of clients in a chatroom.
+        ListOfChatrooms,          // Message containing a list of chatrooms in the server.
+        ListOfFiles,              // Message containing a list of files in a chatroom (or private chat).
 
         RequestJoinChatroom,
         RequestLeaveChatroom,
-        RequestCreateChatroom
+        RequestCreateChatroom,
+
+        ClientJoinedChatroom,     // A new client has joined a chatroom.
+        ClientLeftChatroom        // A client has left a chatroom.
     }
 
     // The structure of a message packet is:
     //
     //    |------------------ Fixed-length Header (45 bytes) --------------| |-- Data --|
-
+    //
     //    2-bit Message Type
     //     |    6-bit Control Code                      Time Sent (binary DateTime)
     //     |     |                                       |
@@ -69,25 +63,20 @@ namespace ChatClassLibrary
     //
     // The first byte is a combination of Message Type and Control Info.
     // In case of server-generated messages, the Sender GUID field is set to a special value, e.g. all zeroes.
+    // Time Sent is in universal time binary, using DateTime.ToUniversalTime().ToBinary().
     // The Data Length and Data fields can be missing (for some types of control message).
     // Packet length must be at least 45 bytes (header-only).
-    //
+    
     public class Message
     {
-        private static Encoding TextEncoding => ChatProtocol.TextEncoding;
-
         /// <summary>
         /// Size of fixed-length header of all messages = 45 bytes.
         /// </summary>
         public static int HeaderLength => 1 + 16 + 16 + 8 + 4;
 
-        /// <summary>
-        /// Use as SenderID or TargetID when there's no need to be specific.
-        /// </summary>
-        public static Guid NullID => Guid.Empty;
-
         //--------------------------------------------------------------------------------------//
-        #region Properties
+
+        #region Public Properties
 
         /// <summary>
         /// (2-bit) The type of the message.
@@ -124,13 +113,15 @@ namespace ChatClassLibrary
         /// </summary>
         public string Text { get; set; }
 
+        /// <summary>
+        /// Message is considered invalid if the first byte is 0, which normally would not happen.
+        /// (Can occur when reading a message from an empty/disconnected stream).
+        /// </summary>
         public bool IsValid
             => !(this.Type == MessageType.Control && this.ControlInfo == ControlInfo.None);
 
-        public bool IsSenderNull
-            => this.SenderId == Message.NullID;
-
         #endregion
+
         //--------------------------------------------------------------------------------------//
 
         /// <summary>
@@ -143,14 +134,14 @@ namespace ChatClassLibrary
         {
             byte[] packet = null;
 
-            byte[] firstByte = { (byte) ((((int) this.Type) << 6) + ((int) this.ControlInfo)) };
+            byte[] firstByte = { (byte) (((int) this.Type << 6) + (int) this.ControlInfo) };
             byte[] senderGuid = this.SenderId.ToByteArray();
             byte[] targetGuid = this.TargetId.ToByteArray();
             byte[] timeSent = Utility.ToByteArray(this.TimeSent.ToUniversalTime().ToBinary()); // Can be updated later.
 
-            if (this.Text != null && this.Text.Length > 0)
+            if (!string.IsNullOrEmpty(this.Text))
             {
-                byte[] data = TextEncoding.GetBytes(this.Text);
+                byte[] data = ProtocolSettings.TextEncoding.GetBytes(this.Text);
                 byte[] dataLength = Utility.ToByteArray(data.Length);
                 packet = Utility.Concat(firstByte, senderGuid, targetGuid, timeSent, dataLength, data);
             }
@@ -173,7 +164,7 @@ namespace ChatClassLibrary
         /// <returns>A Message object.</returns>
         public static Message FromPacket(byte[] packet)
         {
-            if (packet.Length < HeaderLength) return null;  // Incorrect packet bytes (too short).
+            if (packet.Length < Message.HeaderLength) return null;  // Incorrect packet bytes (too short).
 
             int messageType = packet[0] >> 6;  // The higher 2 bits.
             int controlCode = packet[0] & 0x3F;  // The lower 6 bits.
@@ -181,13 +172,13 @@ namespace ChatClassLibrary
             Guid senderGuid = new Guid(Utility.Slice(packet, 1, 16));
             Guid targetGuid = new Guid(Utility.Slice(packet, 1 + 16, 16));
 
-            long timeSentLong = Utility.BytesToInt64(Utility.Slice(packet, 1 + 16 + 16, 8));
+            long timeSentLong = Utility.BytesToInt64(packet, 1 + 16 + 16);
             DateTime timeSent = DateTime.FromBinary(timeSentLong).ToLocalTime();
 
             // All bytes after the header (if exist) are assumed to be part of the message text.
-            string text = (packet.Length == HeaderLength) ? null
-                        : TextEncoding.GetString(packet, HeaderLength, packet.Length - HeaderLength);
-
+            string text = (packet.Length == Message.HeaderLength) ? null
+                        : ProtocolSettings.TextEncoding.GetString(packet, Message.HeaderLength,
+                                                                  packet.Length - Message.HeaderLength);
             return new Message
             {
                 Type = (MessageType) messageType,
@@ -217,7 +208,7 @@ namespace ChatClassLibrary
         /// <param name="packet">A byte array representing the Message object.</param>
         public static void UpdatePacketTimeStamp(byte[] packet)
         {
-            UpdatePacketTimeStamp(packet, DateTime.Now);
+            Message.UpdatePacketTimeStamp(packet, DateTime.Now);
         }
 
         //--------------------------------------------------------------------------------------//
@@ -230,35 +221,14 @@ namespace ChatClassLibrary
             sb.Append("  - target: ").Append(this.TargetId).AppendLine();
             sb.Append("  - time sent: ").Append(this.TimeSent).AppendLine();
             sb.Append("  - time recv: ").Append(this.TimeReceived).AppendLine();
-            if (this.Text != null)
-            {
-                sb.Append("  - content: ---------------------------").AppendLine();
-                sb.Append(this.Text).AppendLine();
-                sb.Append("----------------------------------------").AppendLine();
-                sb.Append("  - content length (bytes): ").Append(TextEncoding.GetByteCount(this.Text));
-            }
+            if (this.Text == null)
+                return sb.ToString();
+            sb.Append("  - content: ---------------------------").AppendLine();
+            sb.Append(this.Text).AppendLine();
+            sb.Append("----------------------------------------").AppendLine();
+            sb.Append("  - content length (bytes): ").Append(
+                ProtocolSettings.TextEncoding.GetByteCount(this.Text));
             return sb.ToString();
         }
-
-
-        static void Main(string[] args)
-        {
-            Message m = new Message
-            {
-                Type = MessageType.SystemMessage,
-                ControlInfo = ControlInfo.ConnectionRejected,
-                SenderId = Guid.NewGuid(),
-                TargetId = Guid.NewGuid(),
-                TimeSent = DateTime.Now,
-                TimeReceived = DateTime.MinValue,
-                Text = "Hello World"
-            };
-            byte[] b = m.BuildPacket();
-            Message m2 = Message.FromPacket(b);
-            Console.WriteLine(m);
-            Console.WriteLine(m2);
-            Console.Read();
-        }
-
     }
 }
