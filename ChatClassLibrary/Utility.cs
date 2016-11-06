@@ -197,5 +197,47 @@ namespace ChatClassLibrary
         }
 
         #endregion
+
+        public static string[] RandomNames =
+        {
+            "Alice",
+            "Bob",
+            "Dorothea",
+            "Caroline",
+            "Nicolasa",
+            "Byron",
+            "Sharika",
+            "Tiffanie",
+            "Nguyet",
+            "Kristel",
+            "Tierra",
+            "Stanford",
+            "Alesha",
+            "Kandice",
+            "Aurelio",
+            "Coralee",
+            "Darla",
+            "Spencer",
+            "Therese",
+            "Micaela",
+            "Carlota",
+            "Starr",
+            "Clyde",
+            "Brinda",
+            "Lakeesha",
+            "Nilda",
+            "Clay",
+            "Mamie",
+            "Jonah",
+            "Ceola",
+            "Estrella",
+            "Tracy"
+        };
+
+        public static string GetRandomName()
+        {
+            Random random = new Random();
+            return RandomNames[random.Next(RandomNames.Length)];
+        }
     }
 }

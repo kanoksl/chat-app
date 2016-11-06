@@ -38,12 +38,7 @@ namespace ChatClientWPF
             LoadProfileImages();
 
             // Select random username for testing.
-            string[] randomNames = new string[]
-            {
-                "Alice", "Bob", "George", "Mike", "Zebra", "Mr. President", "Frederick", "Whale", "Lalilu"
-            };
-            Random random = new Random();
-            tbxUsername.Text = randomNames[random.Next(randomNames.Length)];
+            tbxUsername.Text = Utility.GetRandomName();
         }
 
         public class ProfileImageEntry
