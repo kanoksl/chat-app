@@ -7,13 +7,13 @@
         mc:Ignorable="d"
         Title="ChatWindow" Height="540" Width="720"
         Closing="Window_Closing">
-    
+
     <Window.Resources>
-        
+
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
-        
+
         <DataTemplate x:Key="DataTemplate_ClientList">
             <StackPanel Orientation="Horizontal">
                 <Image Source="{Binding ProfileImagePath}" Width="24" Margin="8,4,8,4">
@@ -32,7 +32,7 @@
                 </StackPanel>
             </StackPanel>
         </DataTemplate>
-        
+
         <GridView x:Key="ViewBase_ChatHistory">
             <GridViewColumn Header="Time" Width="120">
                 <GridViewColumn.CellTemplate>
@@ -71,7 +71,7 @@
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
         </GridView>
-        
+
         <GridView x:Key="ViewBase_FileList">
             <GridViewColumn Header="File Name" Width="420"
                             DisplayMemberBinding="{Binding FileName}" />
@@ -99,12 +99,12 @@
         <TabControl BorderThickness="0,1,0,0" SelectionChanged="TabControl_SelectionChanged" Background="White">
 
             <TabItem x:Name="tab_Chat" Header="Messages"
-                     Width="120" Height="24" Margin="-2">
-                <Grid>
+                     Width="120" Height="24" Margin="-2" Style="{DynamicResource ChatWindowTab1}">
+                <Grid Margin="-2" Background="{DynamicResource ChatWindowPage1Background}">
                     <ListView x:Name="listView_Chat"
                               View="{DynamicResource ViewBase_ChatHistory}"
                               Margin="4,4,4,33"
-                              Drop="File_Drop" AllowDrop="True">
+                              Drop="File_Drop" AllowDrop="True" Background="{DynamicResource ChatWindowPage1BackgroundLight}">
                     </ListView>
 
                     <TextBox x:Name="tbxChatInput"
@@ -113,7 +113,7 @@
                              VerticalAlignment="Bottom"
                              VerticalContentAlignment="Center"
                              SpellCheck.IsEnabled="True"
-                             KeyDown="tbxChatInput_KeyDown" ToolTip="Type your messages here." />
+                             KeyDown="tbxChatInput_KeyDown" ToolTip="Type your messages here." Background="{DynamicResource ChatWindowPage1BackgroundLight}" />
                     <Button x:Name="btnChatSend" Content="Send"
                             Width="96" Height="24" Margin="0,0,4,4"
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
@@ -123,11 +123,11 @@
             </TabItem>
 
             <TabItem x:Name="tab_Files" Header="File Sharing"
-                     Width="120" Height="24" Margin="-4,-2,-2,-2">
-                <Grid>
+                     Width="120" Height="24" Margin="-4,-2,-2,-2" Style="{DynamicResource ChatWindowTab2}">
+                <Grid Margin="-2" Background="{DynamicResource ChatWindowPage2Background}">
                     <ListView x:Name="listView_Files"
                               View="{DynamicResource ViewBase_FileList}"
-                              Margin="4,4,4,132" />
+                              Margin="4,4,4,132" Background="{DynamicResource ChatWindowPage2BackgroundLight}" />
 
                     <ProgressBar x:Name="pgbFileDownload" Margin="4,0,206,116" Height="11" VerticalAlignment="Bottom" />
                     <TextBlock x:Name="lblFileDownload" Margin="4,0,206,94" Text="Download finished: D:\tmp\file.txt"
@@ -144,14 +144,17 @@
                           VerticalAlignment="Bottom"
                           Drop="File_Drop" AllowDrop="True">
                         <Border BorderThickness="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
+                                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" >
+                            <Border.Background>
+                                <SolidColorBrush Color="#FF9FD4D4" Opacity="0.75"/>
+                            </Border.Background>
+                        </Border>
 
                         <TextBox x:Name="tbxFilePath" Text="filePath"
                                  Height="24" Margin="10,34,164,0"
                                  VerticalContentAlignment="Center"
                                  VerticalAlignment="Top"
-                                 Drop="File_Drop" AllowDrop="True" />
+                                 Drop="File_Drop" AllowDrop="True" Background="{DynamicResource ChatWindowPage2BackgroundLight}" />
 
                         <Button x:Name="btnBrowse" Content="..."
                                 Width="48" Margin="0,34,111,0"
@@ -171,15 +174,15 @@
             </TabItem>
 
             <TabItem x:Name="tab_More" Header="Chatroom Details"
-                     Width="120" Height="24" Margin="-6,-2,-2,-2">
-                <Grid Background="#FFE5E5E5">
+                     Width="120" Height="24" Margin="-6,-2,-2,-2" Style="{DynamicResource ChatWindowTab3}">
+                <Grid Margin="-2" Background="{DynamicResource ChatWindowPage3Background}">
                     <TextBlock Text="Chatroom Members:"
                            Width="320" Margin="0,10,0,0"
                            HorizontalAlignment="Center" VerticalAlignment="Top" />
                     <ListBox x:Name="listBox_Members"
                              ItemTemplate="{DynamicResource DataTemplate_ClientList}"
                              Width="320" Margin="0,31,0,10"
-                             HorizontalAlignment="Center" />
+                             HorizontalAlignment="Center" Background="{DynamicResource ChatWindowPage3BackgroundLight}" />
 
                     <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom"
                             Width="128" Height="24" Margin="0,0,10,10"

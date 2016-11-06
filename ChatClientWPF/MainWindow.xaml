@@ -68,8 +68,8 @@
         <TabControl BorderThickness="0,1,0,0">
 
             <TabItem x:Name="tab_Connect" Header="Connect"
-                     Width="80" Height="24" Margin="-2">
-                <Grid>
+                     Width="80" Height="24" Margin="-2" Style="{DynamicResource MainWindowTab1}">
+                <Grid Background="{DynamicResource MainWindowPage1Background}" Margin="-2">
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Top"
                                 Width="240" Margin="0,0,0,0">
@@ -84,18 +84,19 @@
 
                         <Label Content="1. Enter the address of the server:" Foreground="#CC000000" />
                         <TextBox x:Name="tbxServerAddress" Text="127.0.0.1"
-                                 Height="23" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                 Height="23" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                                 Background="{DynamicResource MainWindowPage1BackgroundLight}" />
 
                         <Label Content="2. Enter a username and pick a profile icon:" Margin="0,16,0,0"
                                Foreground="#CC000000" />
                         <TextBox x:Name="tbxUsername" Text="MyName"
                                  Height="23" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                 KeyDown="tbxUsername_KeyDown" />
+                                 KeyDown="tbxUsername_KeyDown" Background="{DynamicResource MainWindowPage1BackgroundLight}" />
                         <ListBox x:Name="listBox_ProfileImages"
                                  ItemsSource="{Binding}"
                                  ItemTemplate="{DynamicResource DataTemplate_ProfileImageList}"
                                  ItemsPanel="{DynamicResource ItemsPanelTemplate_ProfileImageList}"
-                                 Height="80" Margin="0,2,0,0" />
+                                 Height="80" Margin="0,2,0,0" Background="{DynamicResource MainWindowPage1BackgroundLight}" Style="{DynamicResource MainWindowIconsListBox}" />
 
                         <Label Content="3. Click to connect to the server:"
                                Margin="0,16,0,0" Foreground="#CC000000" />
@@ -130,15 +131,15 @@
             </TabItem>
 
             <TabItem x:Name="tab_Users" Header="Online Users"
-                     Width="110" Height="24" Margin="-4,-2,-2,-2">
-                <Grid>
+                     Width="110" Height="24" Margin="-4,-2,-2,-2" Style="{DynamicResource MainWindowTab2}">
+                <Grid Margin="-2" Background="{DynamicResource MainWindowPage2Background}">
                     <TextBlock
                         Text="Start a private chat with any of the users below by double-clicking their name in the list."
                         Foreground="#CC000000" Margin="10,10,10,0" TextWrapping="Wrap" Height="39"
                         VerticalAlignment="Top" />
                     <ListBox x:Name="listBox_Users"
                              ItemTemplate="{DynamicResource DataTemplate_ClientList}"
-                             Margin="8,54,8,33" />
+                             Margin="8,54,8,33" Background="{DynamicResource MainWindowPage2BackgroundLight}" />
                     <TextBlock x:Name="lblCountUser" Text="0 users currently online."
                                Foreground="#CC000000" Margin="10,0,10,10" TextWrapping="Wrap" TextAlignment="Right"
                                Height="18" VerticalAlignment="Bottom" />
@@ -146,14 +147,14 @@
             </TabItem>
 
             <TabItem x:Name="tab_Chatrooms" Header="Chatrooms"
-                     Width="110" Height="24" Margin="-6,-2,-2,-2">
-                <Grid>
+                     Width="110" Height="24" Margin="-6,-2,-2,-2" Style="{DynamicResource MainWindowTab3}">
+                <Grid Margin="-2" Background="{DynamicResource MainWindowPage3Background}">
                     <TextBlock
                         Text="Join a group chat with other users in the chatrooms listed below, or create your own chatroom."
                         Foreground="#CC000000" Margin="10,10,10,529" TextWrapping="Wrap" />
                     <ListBox x:Name="listBox_Chatrooms"
                              ItemTemplate="{DynamicResource DataTemplate_ChatroomList}"
-                             Margin="8,78,8,33" />
+                             Margin="8,78,8,33" Background="{DynamicResource MainWindowPage3BackgroundLight}" />
                     <Button x:Name="btnNewRoom" Content="Create New Chatroom" Margin="0,49,8,0"
                             HorizontalAlignment="Right" Width="130" Height="24" VerticalAlignment="Top"
                             Click="btnNewRoom_Click" />
@@ -161,7 +162,7 @@
                                Foreground="#CC000000" Margin="10,0,10,10" TextWrapping="Wrap" TextAlignment="Right"
                                Height="18" VerticalAlignment="Bottom" />
                     <TextBox x:Name="tbxNewRoomName" VerticalContentAlignment="Center" Margin="8,49,143,0"
-                             TextWrapping="Wrap" Text="New Chatroom Name" Height="24" VerticalAlignment="Top" />
+                             TextWrapping="Wrap" Text="New Chatroom Name" Height="24" VerticalAlignment="Top" Background="{DynamicResource MainWindowPage3BackgroundLight}" />
                 </Grid>
             </TabItem>
 
