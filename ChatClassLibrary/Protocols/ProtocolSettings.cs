@@ -37,5 +37,10 @@ namespace ChatClassLibrary.Protocols
         /// Use as SenderID or TargetID when there's no need to be specific.
         /// </summary>
         public static Guid NullId => Guid.Empty;
+
+        /// <summary>
+        /// ID of the main public chatroom.
+        /// </summary>
+        public static Guid PublicRoomId => Guid.Empty;
     }
 }

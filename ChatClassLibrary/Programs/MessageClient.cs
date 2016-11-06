@@ -15,83 +15,89 @@ using ChatClassLibrary.Protocols;
 
 namespace ChatClassLibrary
 {
-    public class MessageEventArgs : EventArgs
+    public class ClientInfo
     {
-        public Message Message { get; private set; }
-        public MessageEventArgs(Message message) { this.Message = message; }
-        public MessageEventArgs() { }
-    }
+        public Guid ClientId { get; set; }
+        public string DisplayName { get; set; }
 
-    public class ConnectionEventArgs : EventArgs
-    {
-        public IPEndPoint ServerEndPoint { get; private set; }
-        public TcpClient ClientSocket { get; private set; }
-        public ConnectionEventArgs(IPEndPoint serverEP, TcpClient clientSocket)
+        public ClientInfo(Guid id, string name)
         {
-            this.ServerEndPoint = serverEP;
-            this.ClientSocket = clientSocket;
+            this.ClientId = id;
+            this.DisplayName = name;
         }
-        public ConnectionEventArgs() { }
+
+        public override string ToString()
+        {
+            return "ClientInfo\n"
+                    + "    ClientID: " + this.ClientId.ToString()
+                    + "    DisplayName: " + this.DisplayName;
+        }
     }
 
-    public class ChatroomEventArgs : EventArgs
+    public class ChatroomInfo
     {
-        public Guid ChatroomId { get; private set; }
-        public string ChatroomName { get; private set; }
-        public ChatroomEventArgs(Guid chatroomId, string chatroomName)
+        public Guid ChatroomId { get; set; }
+        public string ChatroomName { get; set; }
+        public int MemberCount => Members?.Count ?? 0;
+        public List<Guid> Members { get; set; }  // Only for joined rooms.
+        public List<ClientInfo> MembersInfo { get; set; }
+
+        public ChatroomInfo(Guid id, string name)
         {
-            this.ChatroomId = chatroomId;
-            this.ChatroomName = chatroomName;
+            this.ChatroomId = id;
+            this.ChatroomName = name;
+            this.Members = new List<Guid>();
+            this.MembersInfo = new List<ClientInfo>();
+        }
+
+        public override string ToString()
+        {
+            return "ChatroomInfo\n"
+                    + "    ChatroomID: " + this.ChatroomId.ToString()
+                    + "    ChatroomName: " + this.ChatroomName
+                    + "    MemberCount: " + this.MemberCount;
         }
     }
 
     public class MessageClient
     {
-        public class ClientInfo
+        public MessageClient(IPAddress serverIP, int port)
         {
-            public Guid ClientId { get; set; }
-            public string DisplayName { get; set; }
-            
-            public ClientInfo(Guid id, string name)
-            {
-                this.ClientId = id;
-                this.DisplayName = name;
-            }
+            IPEndPoint serverEP = new IPEndPoint(serverIP, port);
+            this.ServerEndPoint = serverEP;
+            this.ClientId = Guid.NewGuid();
 
-            public override string ToString()
-            {
-                return "ClientInfo\n"
-                        + "    ClientID: " + this.ClientId.ToString()
-                        + "    DisplayName: " + this.DisplayName;
-            }
+            this.KnownClients = new Dictionary<Guid, ClientInfo>();
+            this.KnownChatrooms = new Dictionary<Guid, ChatroomInfo>();
+            this.KnownChatrooms.Add(ProtocolSettings.PublicRoomId, 
+                                    new ChatroomInfo(ProtocolSettings.PublicRoomId, "Public Room"));
+            this.JoinedChatrooms = new List<Guid>();
         }
 
-        public class ChatroomInfo
-        {
-            public Guid ChatroomId { get; set; }
-            public string ChatroomName { get; set; }
-            public int MemberCount => Members?.Count ?? 0;
-            public List<Guid> Members { get; set; }  // Only for joined rooms.
-            public List<ClientInfo> MembersInfo { get; set; }
+        public MessageClient(IPAddress serverIP)
+            : this(serverIP, ProtocolSettings.ChatProtocolPort) { }
 
-            //public int MemberCount2 { get; set; }
+        //--------------------------------------------------------------------------------------//
 
-            public ChatroomInfo(Guid id, string name)
-            {
-                this.ChatroomId = id;
-                this.ChatroomName = name;
-                this.Members = new List<Guid>();
-                this.MembersInfo = new List<ClientInfo>();
-            }
+        #region Public Properties
 
-            public override string ToString()
-            {
-                return "ChatroomInfo\n"
-                        + "    ChatroomID: " + this.ChatroomId.ToString()
-                        + "    ChatroomName: " + this.ChatroomName
-                        + "    MemberCount: " + this.MemberCount;
-            }
-        }
+        public IPEndPoint ServerEndPoint { get; set; }
+        public TcpClient ClientSocket { get; set; }
+        public NetworkStream NetworkStream { get; set; }
+        
+        public Guid ClientId { get; private set; }
+        public string DisplayName { get; set; }
+        
+        public Dictionary<Guid, ClientInfo> KnownClients { get; set; }
+        public Dictionary<Guid, ChatroomInfo> KnownChatrooms { get; set; }
+        public List<Guid> JoinedChatrooms { get; set; }
+        
+        public bool Connected
+            => this.ClientSocket?.Connected ?? false;
+
+        #endregion
+
+        //--------------------------------------------------------------------------------------//
 
         public string GetChatroomName(Guid chatroomId)
         {
@@ -108,46 +114,7 @@ namespace ChatClassLibrary
             else
                 return "<UNKNOWN CLIENT>";
         }
-
-        //--------------------------------------------------------------------------------------//
-        #region Properties
-
-        public IPEndPoint ServerEndPoint { get; set; }
-        public TcpClient ClientSocket { get; set; }
-        public NetworkStream NetworkStream { get; set; }
-
-
-        public Guid ClientId { get; private set; }
-        public string DisplayName { get; set; }
-
-
-        public Dictionary<Guid, ClientInfo> KnownClients { get; set; }
-        public Dictionary<Guid, ChatroomInfo> KnownChatrooms { get; set; }
-        public List<Guid> JoinedChatrooms { get; set; }
-
-
-        public bool Connected
-            => this.ClientSocket?.Connected ?? false;
-
-        #endregion
-        //--------------------------------------------------------------------------------------//
-
-        public MessageClient(IPAddress serverIP, int port)
-        {
-            IPEndPoint serverEP = new IPEndPoint(serverIP, port);
-            this.ServerEndPoint = serverEP;
-            this.ClientId = Guid.NewGuid();
-
-            this.KnownClients = new Dictionary<Guid, ClientInfo>();
-            this.KnownChatrooms = new Dictionary<Guid, ChatroomInfo>();
-            this.KnownChatrooms.Add(Guid.Empty, new ChatroomInfo(Guid.Empty, "Public Room"));
-            this.JoinedChatrooms = new List<Guid>();
-        }
-
-        public MessageClient(IPAddress serverIP)
-            : this(serverIP, ProtocolSettings.ChatProtocolPort) { }
-
-
+        
         public async void ConnectToServer()
         {
             await Task.Run(() =>

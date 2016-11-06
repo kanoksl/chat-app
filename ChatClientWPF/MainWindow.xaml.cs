@@ -374,7 +374,7 @@ namespace ChatClientWPF
         {
             if (e.ClickCount >= 2)
             {
-                var userInfo = (MessageClient.ClientInfo) listBox_Users.SelectedItem;
+                var userInfo = (ClientInfo) listBox_Users.SelectedItem;
                 //if (userInfo.ClientId == ClientService.ClientId)
                 //    return;  // No chatting with yourself.
 
@@ -400,7 +400,7 @@ namespace ChatClientWPF
             {
                 //MessageBox.Show(listBox_Chatrooms.SelectedItem.ToString());
 
-                var roomInfo = (MessageClient.ChatroomInfo) listBox_Chatrooms.SelectedItem;
+                var roomInfo = (ChatroomInfo) listBox_Chatrooms.SelectedItem;
 
                 if (ChatWindows.ContainsKey(roomInfo.ChatroomId))
                 {
