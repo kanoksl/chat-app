@@ -57,6 +57,23 @@ namespace ChatServer
         public static void Main(string[] args)
         {
             Console.WriteLine("Initializing Chat Server Console...");
+            Console.WriteLine();
+
+            Console.WriteLine("    Welcome to...");
+            Console.WriteLine();
+            Console.WriteLine("        ██╗      ██████╗ ██╗     ██╗ ██████╗██╗  ██╗ █████╗ ████████╗");
+            Console.WriteLine("        ██║     ██╔═══██╗██║     ██║██╔════╝██║  ██║██╔══██╗╚══██╔══╝");
+            Console.WriteLine("        ██║     ██║   ██║██║     ██║██║     ███████║███████║   ██║   ");
+            Console.WriteLine("        ██║     ██║   ██║██║     ██║██║     ██╔══██║██╔══██║   ██║   ");
+            Console.WriteLine("        ███████╗╚██████╔╝███████╗██║╚██████╗██║  ██║██║  ██║   ██║   ");
+            Console.WriteLine("        ╚══════╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ");
+            Console.WriteLine("                                                           SERVER 1.0");
+            Console.WriteLine();
+
+            Console.WriteLine(" *  You can minimize or hide this window now. The messages that will appear   *\n" +
+                              " *  here later are for debugging purpose only. Do not close this window; the  *\n" +
+                              " *  server will shut down and the clients will not be able to chat.           *");
+            Console.WriteLine();
 
             var localAddress = SelectLocalIPAddress();
             var server = new MessageServer(localAddress);

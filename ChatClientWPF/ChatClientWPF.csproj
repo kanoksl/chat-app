@@ -139,9 +139,6 @@
     <EmbeddedResource Include="Resources\app_icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\profile_05.png" />
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
       <Visible>False</Visible>
       <ProductName>Microsoft .NET Framework 4.5.2 %28x86 and x64%29</ProductName>
@@ -152,111 +149,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_06.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_07.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_08.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_09.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_10.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_11.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_12.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_13.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_14.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_16.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_17.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_18.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_19.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_20.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_21.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_22.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_23.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_24.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_25.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_26.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_27.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_28.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_29.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_31.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_32.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_33.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_34.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_36.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_37.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_38.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_01.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_02.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_03.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_04.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\profile_00.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

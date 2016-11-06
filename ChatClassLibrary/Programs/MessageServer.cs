@@ -83,7 +83,15 @@ namespace ChatClassLibrary
             TcpListener ftpSocket = new TcpListener(this.ServerIP, ProtocolSettings.FileProtocolPort);
             Thread ftpThread = new Thread(() =>
             {
-                Console.WriteLine("Started FTP Listener Thread");
+                lock (this._lock)
+                {
+                    Console.WriteLine("FTP Listener Thread started, using the following IPEndPoint:");
+                    Console.WriteLine("  - IP address  = {0}", this.ServerIP);
+                    Console.WriteLine("  - Port number = {0}", ProtocolSettings.FileProtocolPort);
+                    Console.WriteLine("Waiting for file upload requests...");
+                    Console.WriteLine("-------------------------------------------------------------------------------");
+                }
+
                 ftpSocket.Start();
 
                 while (true)
@@ -91,8 +99,19 @@ namespace ChatClassLibrary
                     Guid senderId;
                     Guid targetId;
                     string fileInfo;  // Name, size, time, and hash.
-                    bool received = FileProtocol.ReceiveFile(ftpSocket,
-                        out senderId, out targetId, out fileInfo);
+                    bool received;
+                    try
+                    {
+                        received = FileProtocol.ReceiveFile(ftpSocket, out senderId, out targetId, out fileInfo);
+                    }
+                    catch
+                    {
+                        received = false;
+                        fileInfo = "";
+                        senderId = Guid.Empty;
+                        targetId = Guid.Empty;
+                    }
+                     
                     if (received)
                     {
                         Console.WriteLine("File Transfer Finished.");
@@ -112,7 +131,7 @@ namespace ChatClassLibrary
                     }
                     else
                     {
-
+                        Console.WriteLine("Error occurred while receiving file.");
                     }
                 }
 
@@ -162,6 +181,8 @@ namespace ChatClassLibrary
             return true;
         }
 
+        private object _lock = new object();
+
         public void StartListening()
         {
             TcpClient clientSocket = null;
@@ -174,12 +195,14 @@ namespace ChatClassLibrary
             this.StartFTPListener();
             this.ServerSocket.Start();
 
-            Console.WriteLine("-------------------------------------------------------------------------------");
-            Console.WriteLine("Server started, using the following IPEndPoint:");
-            Console.WriteLine("  - IP address  = {0}", this.ServerIP);
-            Console.WriteLine("  - Port number = {0}", this.ServerListeningPort);
-            Console.WriteLine("-------------------------------------------------------------------------------");
-            Console.WriteLine("Waiting for client...\n");
+            lock (_lock)
+            {
+                Console.WriteLine("Server started, using the following IPEndPoint:");
+                Console.WriteLine("  - IP address  = {0}", this.ServerIP);
+                Console.WriteLine("  - Port number = {0}", this.ServerListeningPort);
+                Console.WriteLine("Waiting for client...");
+                Console.WriteLine("-------------------------------------------------------------------------------");
+            }
 
             while (true)
             {   // Wait for client connection.
@@ -250,6 +273,7 @@ namespace ChatClassLibrary
         {
             Guid newRoomId = CreateChatroom(e.Message.Text);
             ChatroomHandlerTable[newRoomId].AddClient(ClientHandlerTable[e.Message.SenderId]);
+            SendFullClientAndChatroomList();
         }
 
         private void Handler_FileDownloadRequestReceived(object sender, MessageEventArgs e)
@@ -359,6 +383,7 @@ namespace ChatClassLibrary
             room.ChatroomBecameEmpty += Chatroom_ChatroomBecameEmpty;
             
             SendFullChatroomList(ClientHandlerTable.Values);
+            //SendFullClientAndChatroomList();
 
             return room.ChatroomId;
         }

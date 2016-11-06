@@ -352,6 +352,14 @@ namespace ChatClientWPF
 
         private void btnConnect_Click(object sender, RoutedEventArgs e)
         {
+            string username = this.tbxUsername.Text.Trim();
+            if (username == "<SERVER>" || username == "<YOU>")
+            {
+                MessageBox.Show("That username is not allowed. Please try something else.",
+                    "Invalid Username", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             _Connect();
         }
 

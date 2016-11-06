@@ -223,11 +223,11 @@ namespace ChatClassLibrary.Protocols
             sb.Append("  - time recv: ").Append(this.TimeReceived).AppendLine();
             if (this.Text == null)
                 return sb.ToString();
+            sb.Append("  - content length (bytes): ").Append(
+                ProtocolSettings.TextEncoding.GetByteCount(this.Text)).AppendLine();
             sb.Append("  - content: ---------------------------").AppendLine();
             sb.Append(this.Text).AppendLine();
             sb.Append("----------------------------------------").AppendLine();
-            sb.Append("  - content length (bytes): ").Append(
-                ProtocolSettings.TextEncoding.GetByteCount(this.Text));
             return sb.ToString();
         }
     }
