@@ -20,6 +20,12 @@ namespace ChatClassLibrary
         public Guid ClientId { get; set; }
         public string DisplayName { get; set; }
 
+        public int ProfileImage 
+            => this.ClientId.ToByteArray()[0];  // The first byte is the icon number.
+
+        public string ProfileImagePath 
+            => Path.GetFullPath(string.Format(".\\resource_images\\profile_{0:00}.png", this.ProfileImage));
+
         public ClientInfo(Guid id, string name)
         {
             this.ClientId = id;
@@ -61,11 +67,14 @@ namespace ChatClassLibrary
 
     public class MessageClient
     {
-        public MessageClient(IPAddress serverIP, int port)
+        public MessageClient(IPAddress serverIP, int port, int profileImage = 0)
         {
-            IPEndPoint serverEP = new IPEndPoint(serverIP, port);
+            var serverEP = new IPEndPoint(serverIP, port);
             this.ServerEndPoint = serverEP;
-            this.ClientId = Guid.NewGuid();
+
+            byte[] clientGuid = Guid.NewGuid().ToByteArray();
+            clientGuid[0] = (byte) profileImage;  // The first byte is the profile image number.
+            this.ClientId = new Guid(clientGuid);
 
             this.KnownClients = new Dictionary<Guid, ClientInfo>();
             this.KnownChatrooms = new Dictionary<Guid, ChatroomInfo>();
@@ -74,8 +83,8 @@ namespace ChatClassLibrary
             this.JoinedChatrooms = new List<Guid>();
         }
 
-        public MessageClient(IPAddress serverIP)
-            : this(serverIP, ProtocolSettings.ChatProtocolPort) { }
+        public MessageClient(IPAddress serverIP, int profileImage = 0)
+            : this(serverIP, ProtocolSettings.ChatProtocolPort, profileImage) { }
 
         //--------------------------------------------------------------------------------------//
 
@@ -94,6 +103,11 @@ namespace ChatClassLibrary
         
         public bool Connected
             => this.ClientSocket?.Connected ?? false;
+
+        public int ProfileImage
+            => this.ClientId.ToByteArray()[0];  // The first byte is the icon number.
+        public string ProfileImagePath
+            => Path.GetFullPath(string.Format(".\\resource_images\\profile_{0:00}.png", this.ProfileImage));
 
         #endregion
 

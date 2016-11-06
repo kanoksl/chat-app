@@ -121,4 +121,112 @@
   <data name="app_icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\app_icon.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="profile_00" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_00.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_01" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_01.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_02" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_02.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_03" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_03.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_04" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_04.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_05" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_05.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_06" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_06.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_07" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_07.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_08" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_08.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_09" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_09.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_10" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_10.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_12" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_12.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_13" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_13.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_14" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_14.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_17" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_17.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_18" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_18.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_19" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_19.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_20" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_20.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_21" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_21.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_23" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_23.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_25" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_25.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_26" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_26.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_27" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_27.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_28" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_28.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_29" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_29.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_31" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_31.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_33" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_33.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_34" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_34.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_36" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_36.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_37" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_37.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="profile_38" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\profile_38.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

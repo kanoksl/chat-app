@@ -39,7 +39,7 @@ namespace ChatClientWPF
             set
             {
                 chatName = value;
-                this.Title = "Chat# - " + chatName
+                this.Title = "LoliChat - " + chatName
                     + (PrivateMode ? " [Private Chat]" : " [Group Chat]");
             }
         }
@@ -60,6 +60,9 @@ namespace ChatClientWPF
 
             this.ChatHistory = new ObservableCollection<MessageLine>();
             listView_Chat.ItemsSource = ChatHistory;
+
+            this.imgUserProfile.Source = clientService != null && clientService.Connected ?
+                    new BitmapImage(new Uri(this.ClientService.ProfileImagePath)) : null;
 
             lblFileDownload.Text = "";
             tbxFilePath.Text = "";
@@ -86,8 +89,7 @@ namespace ChatClientWPF
 
         public void DisplayMessage(Message message)
         {
-            if (message.Text == null || message.Text == "")
-                return;
+            if (string.IsNullOrEmpty(message.Text)) return;
 
             Guid senderId = message.SenderId;
             string senderName = "-";
@@ -98,10 +100,11 @@ namespace ChatClientWPF
                 senderName = "<YOU>";
             else
                 senderName = ClientService.GetClientName(senderId);
+            int senderImage = senderId.ToByteArray()[0];
 
             this.Dispatcher.Invoke(() =>
             {   // Called from different thread.
-                ChatHistory.Add(new MessageLine(message.TimeSent, senderName, message.Text));
+                ChatHistory.Add(new MessageLine(message.TimeSent, senderName, message.Text, senderImage));
 
                 listView_Chat.SelectedIndex = ChatHistory.Count - 1;
                 listView_Chat.ScrollIntoView(listView_Chat.SelectedItem);
@@ -273,13 +276,17 @@ namespace ChatClientWPF
             public DateTime Time { get; set; }
             public string Sender { get; set; }
             public string MessageText { get; set; }
-            public MessageLine(DateTime time, string sender, string text)
+            public MessageLine(DateTime time, string sender, string text, int profileImage = 0)
             {
                 this.Time = time;
                 this.Sender = sender;
                 this.MessageText = text;
+                this.SenderImage = profileImage;
             }
 
+            public int SenderImage { get; set; }
+            public string SenderImagePath
+                => System.IO.Path.GetFullPath(string.Format(".\\resource_images\\profile_{0:00}.png", this.SenderImage));
             public string MessageColor
                 => Sender == "<SERVER>" ? "#CB000000"
                    : Sender == "<YOU>" ? "#FF109020" : "#FF102090";

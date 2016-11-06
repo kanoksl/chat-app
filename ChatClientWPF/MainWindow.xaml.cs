@@ -34,6 +34,9 @@ namespace ChatClientWPF
 
             _UpdateGUI();
 
+            // Populate profile image list.
+            LoadProfileImages();
+
             // Select random username for testing.
             string[] randomNames = new string[]
             {
@@ -43,6 +46,29 @@ namespace ChatClientWPF
             tbxUsername.Text = randomNames[random.Next(randomNames.Length)];
         }
 
+        public class ProfileImageEntry
+        {
+            public string ImagePath { get; set; }
+            public string ImageName { get; set; }
+        }
+
+        private void LoadProfileImages()
+        {
+            string[] files = Directory.GetFiles(".\\resource_images\\", "profile_*.png");
+            var imageList = new List<ProfileImageEntry>();
+            foreach (var file in files)
+            {
+                var image = new ProfileImageEntry
+                {
+                    ImagePath = System.IO.Path.GetFullPath(file),
+                    ImageName = System.IO.Path.GetFileName(file)
+                };
+                imageList.Add(image);
+            }
+
+            this.listBox_ProfileImages.DataContext = imageList;
+        }
+
         private void _Connect()
         {
             if (ClientService != null && ClientService.Connected)
@@ -50,12 +76,15 @@ namespace ChatClientWPF
                 return;
             }
 
+            int profileImage = this.listBox_ProfileImages.SelectedIndex;
+            if (profileImage == -1) profileImage = 0;
+
             pgbConnect.IsIndeterminate = true;
 
             IPAddress serverIP;
             if (IPAddress.TryParse(tbxServerAddress.Text.Trim(), out serverIP))
             {
-                ClientService = new MessageClient(serverIP);
+                ClientService = new MessageClient(serverIP, profileImage);
                 ClientService.DisplayName = tbxUsername.Text.Trim();
 
                 // Initialize event handlers.
@@ -173,6 +202,10 @@ namespace ChatClientWPF
             ClientService.ClientLeftChatroom -= ClientService_ClientLeftChatroom;
 
             // Remove all windows.
+            foreach (var window in ChatWindows.Values)
+            {
+                window.Close();
+            }
             ChatWindows.Clear();
 
             _UpdateGUI();
@@ -355,6 +388,7 @@ namespace ChatClientWPF
 
                 tbxServerAddress.IsEnabled = !connected;
                 tbxUsername.IsEnabled = !connected;
+                this.listBox_ProfileImages.IsEnabled = !connected;
                 btnConnect.IsEnabled = !connected;
 
                 tab_Users.IsEnabled = connected;
@@ -363,10 +397,13 @@ namespace ChatClientWPF
                 if (!connected)
                     tab_Connect.IsSelected = true;
 
-                this.Title = connected ? "Chat# - " + tbxUsername.Text.Trim() : "Chat#";
+                this.Title = connected ? "LoliChat - " + tbxUsername.Text.Trim() : "LoliChat 1.0";
 
                 pgbConnect.IsIndeterminate = false;
                 pgbConnect.Value = connected ? 100 : 0;
+
+                this.imgUserProfile.Source = connected ? 
+                    new BitmapImage(new Uri(this.ClientService.ProfileImagePath)) : null;
             });
         }
 

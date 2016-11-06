@@ -7,26 +7,39 @@
         mc:Ignorable="d"
         Title="ChatWindow" Height="540" Width="720"
         Closing="Window_Closing">
+    
     <Window.Resources>
+        
         <Style TargetType="ListViewItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
+        
         <DataTemplate x:Key="DataTemplate_ClientList">
-            <StackPanel Background="Transparent">
-                <Label Content="{Binding DisplayName}" 
-                       FontWeight="Bold"/>
-                <Label Content="{Binding ClientId}" 
-                       Foreground="#50000000" 
-                       Margin="0,-4,0,0"/>
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding ProfileImagePath}" Width="24" Margin="8,4,8,4">
+
+                    <Image.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="4" Direction="0" />
+                    </Image.Effect>
+                </Image>
+                <StackPanel Background="Transparent">
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontWeight="Bold"
+                               Margin="4,4,4,2" />
+                    <TextBlock Text="{Binding ClientId, StringFormat=ID: {0}}"
+                               Foreground="#50000000"
+                               Margin="4,0,4,6" />
+                </StackPanel>
             </StackPanel>
         </DataTemplate>
+        
         <GridView x:Key="ViewBase_ChatHistory">
             <GridViewColumn Header="Time" Width="120">
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Time, StringFormat='\{0:yyyy-MM-dd HH:mm\}'}">
                             <TextBlock.Foreground>
-                                <SolidColorBrush Color="{Binding MessageColor}"/>
+                                <SolidColorBrush Color="{Binding MessageColor}" />
                             </TextBlock.Foreground>
                         </TextBlock>
                     </DataTemplate>
@@ -35,11 +48,14 @@
             <GridViewColumn Header="Sender" Width="160">
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Sender}">
-                            <TextBlock.Foreground>
-                                <SolidColorBrush Color="{Binding MessageColor}"/>
-                            </TextBlock.Foreground>
-                        </TextBlock>
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="{Binding SenderImagePath}" Width="16" Margin="4" />
+                            <TextBlock Text="{Binding Sender}" VerticalAlignment="Center">
+                                <TextBlock.Foreground>
+                                    <SolidColorBrush Color="{Binding MessageColor}" />
+                                </TextBlock.Foreground>
+                            </TextBlock>
+                        </StackPanel>
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
@@ -48,21 +64,22 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding MessageText}">
                             <TextBlock.Foreground>
-                                <SolidColorBrush Color="{Binding MessageColor}"/>
+                                <SolidColorBrush Color="{Binding MessageColor}" />
                             </TextBlock.Foreground>
                         </TextBlock>
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
         </GridView>
+        
         <GridView x:Key="ViewBase_FileList">
-            <GridViewColumn Header="File Name" Width="340" 
-                            DisplayMemberBinding="{Binding FileName}"/>
+            <GridViewColumn Header="File Name" Width="420"
+                            DisplayMemberBinding="{Binding FileName}" />
             <GridViewColumn Header="Size" Width="100">
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding FileSizeKB, StringFormat='\{0:#,0\} KB'}"
-                                   TextAlignment="Right"/>
+                                   TextAlignment="Right" />
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
@@ -70,7 +87,7 @@
                 <GridViewColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding TimeUploaded, StringFormat='\{0:yyyy-MM-dd HH:mm\}'}"
-                                   TextAlignment="Right"/>
+                                   TextAlignment="Right" />
                     </DataTemplate>
                 </GridViewColumn.CellTemplate>
             </GridViewColumn>
@@ -81,82 +98,74 @@
     <Grid>
         <TabControl BorderThickness="0,1,0,0" SelectionChanged="TabControl_SelectionChanged" Background="White">
 
-            <TabItem x:Name="tab_Chat" Header="Messages" 
+            <TabItem x:Name="tab_Chat" Header="Messages"
                      Width="120" Height="24" Margin="-2">
                 <Grid>
-                    <ListView x:Name="listView_Chat"  
+                    <ListView x:Name="listView_Chat"
                               View="{DynamicResource ViewBase_ChatHistory}"
                               Margin="4,4,4,33"
                               Drop="File_Drop" AllowDrop="True">
-                        <!--<ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Sender}" Value="MyName">
-                                        <Setter Property="Background" Value="Red"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ListView.ItemContainerStyle>-->
                     </ListView>
 
-                    <TextBox x:Name="tbxChatInput" 
-                             Height="24" Margin="4,0,105,4"  
-                             TextWrapping="Wrap" 
+                    <TextBox x:Name="tbxChatInput"
+                             Height="24" Margin="4,0,105,4"
+                             TextWrapping="Wrap"
                              VerticalAlignment="Bottom"
                              VerticalContentAlignment="Center"
                              SpellCheck.IsEnabled="True"
-                             KeyDown="tbxChatInput_KeyDown" ToolTip="Type your messages here."/>
-                    <Button x:Name="btnChatSend" Content="Send" 
-                            Width="96" Height="24" Margin="0,0,4,4" 
+                             KeyDown="tbxChatInput_KeyDown" ToolTip="Type your messages here." />
+                    <Button x:Name="btnChatSend" Content="Send"
+                            Width="96" Height="24" Margin="0,0,4,4"
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             IsEnabled="{Binding ElementName=tbxChatInput, Path=Text.Length}"
-                            Click="btnChatSend_Click"/>
+                            Click="btnChatSend_Click" />
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="tab_Files"  Header="File Sharing" 
+            <TabItem x:Name="tab_Files" Header="File Sharing"
                      Width="120" Height="24" Margin="-4,-2,-2,-2">
                 <Grid>
-                    <ListView x:Name="listView_Files" 
+                    <ListView x:Name="listView_Files"
                               View="{DynamicResource ViewBase_FileList}"
                               Margin="4,4,4,132" />
 
-                    <ProgressBar x:Name="pgbFileDownload" Margin="4,0,206,116" Height="11" VerticalAlignment="Bottom"/>
-                    <TextBlock x:Name="lblFileDownload" Margin="4,0,206,94"  Text="Download finished: D:\tmp\file.txt" Height="19" VerticalAlignment="Bottom" FontSize="10" Opacity="0.8"/>
+                    <ProgressBar x:Name="pgbFileDownload" Margin="4,0,206,116" Height="11" VerticalAlignment="Bottom" />
+                    <TextBlock x:Name="lblFileDownload" Margin="4,0,206,94" Text="Download finished: D:\tmp\file.txt"
+                               Height="19" VerticalAlignment="Bottom" FontSize="10" Opacity="0.8" />
 
-                    <Button x:Name="btnDownloadFile" Content="Download" Margin="0,0,105,103" Height="24" 
+                    <Button x:Name="btnDownloadFile" Content="Download" Margin="0,0,105,103" Height="24"
                             VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"
-                            Click="btnDownloadFile_Click"/>
-                    <Button x:Name="btnRemoveFile" Content="Remove" Margin="0,0,4,103" Height="24" 
+                            Click="btnDownloadFile_Click" />
+                    <Button x:Name="btnRemoveFile" Content="Remove" Margin="0,0,4,103" Height="24"
                             VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="96"
-                            Click="btnRemoveFile_Click"/>
+                            Click="btnRemoveFile_Click" />
 
                     <Grid Height="83" Margin="4,0,4,4"
                           VerticalAlignment="Bottom"
                           Drop="File_Drop" AllowDrop="True">
-                        <Border BorderThickness="1"  
+                        <Border BorderThickness="1"
                                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
+                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
 
-                        <TextBox x:Name="tbxFilePath" Text="filePath"  
+                        <TextBox x:Name="tbxFilePath" Text="filePath"
                                  Height="24" Margin="10,34,164,0"
-                                 VerticalContentAlignment="Center" 
+                                 VerticalContentAlignment="Center"
                                  VerticalAlignment="Top"
-                                 Drop="File_Drop" AllowDrop="True"/>
+                                 Drop="File_Drop" AllowDrop="True" />
 
-                        <Button x:Name="btnBrowse" Content="..." 
-                                Width="48" Margin="0,34,111,0" 
+                        <Button x:Name="btnBrowse" Content="..."
+                                Width="48" Margin="0,34,111,0"
                                 HorizontalAlignment="Right" Height="24" VerticalAlignment="Top"
-                                Click="btnBrowse_Click"/>
-                        <Button x:Name="btnUpload" Content="Upload" 
+                                Click="btnBrowse_Click" />
+                        <Button x:Name="btnUpload" Content="Upload"
                                 Width="96" Margin="0,34,10,0"
                                 HorizontalAlignment="Right" Height="24" VerticalAlignment="Top"
-                                Click="btnUpload_Click"/>
+                                Click="btnUpload_Click" />
 
-                        <ProgressBar x:Name="pgbFileUpload" Margin="10,63,10,0" Height="11" VerticalAlignment="Top"/>
+                        <ProgressBar x:Name="pgbFileUpload" Margin="10,63,10,0" Height="11" VerticalAlignment="Top" />
 
-                        <TextBlock Text="Choose a file to upload below, or drag from other application and drop here." 
-                                   HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                        <TextBlock Text="Choose a file to upload below, or drag from other application and drop here."
+                                   HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" />
                     </Grid>
                 </Grid>
             </TabItem>
@@ -164,21 +173,29 @@
             <TabItem x:Name="tab_More" Header="Chatroom Details"
                      Width="120" Height="24" Margin="-6,-2,-2,-2">
                 <Grid Background="#FFE5E5E5">
-                    <Label Content="Chatroom Members"  
-                           Height="25" Width="278" Margin="10,10,0,0"
-                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <TextBlock Text="Chatroom Members:"
+                           Width="320" Margin="0,10,0,0"
+                           HorizontalAlignment="Center" VerticalAlignment="Top" />
                     <ListBox x:Name="listBox_Members"
                              ItemTemplate="{DynamicResource DataTemplate_ClientList}"
-                             Width="280" Margin="8,40,0,10" HorizontalAlignment="Left"/>
+                             Width="320" Margin="0,31,0,10"
+                             HorizontalAlignment="Center" />
 
-                    <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom" 
+                    <Button x:Name="btnLeaveChatroom" Content="Leave Chatroom"
                             Width="128" Height="24" Margin="0,0,10,10"
-                            HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             Click="btnLeaveChatroom_Click" />
                 </Grid>
             </TabItem>
 
         </TabControl>
 
+        <Image x:Name="imgUserProfile"
+               Width="16" Height="16" Margin="0,4,6,0"
+               HorizontalAlignment="Right" VerticalAlignment="Top">
+            <Image.Effect>
+                <DropShadowEffect ShadowDepth="0" BlurRadius="4" Direction="0" />
+            </Image.Effect>
+        </Image>
     </Grid>
 </Window>
