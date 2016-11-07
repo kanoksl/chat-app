@@ -476,16 +476,7 @@ namespace ChatClassLibrary
 
         #endregion
         //--------------------------------------------------------------------------------------//
-
-        // more events:
-        // client list received
-        // chatroom list received // currently included in MessageReceived
-
-
-
-        // more methods:
-        // join chatroom
-        // leave chatroom
+        
     }
 
 }
