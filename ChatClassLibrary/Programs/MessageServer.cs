@@ -78,24 +78,24 @@ namespace ChatClassLibrary
         public MessageServer(IPAddress serverIP)
             : this(serverIP, ProtocolSettings.ChatProtocolPort) { }
 
-        private void StartFTPListener()
+        private void StartFTPListener(int port)
         {
-            TcpListener ftpSocket = new TcpListener(this.ServerIP, ProtocolSettings.FileProtocolPort);
+            TcpListener ftpSocket = new TcpListener(this.ServerIP, port);
             Thread ftpThread = new Thread(() =>
             {
                 lock (this._lock)
                 {
                     Console.WriteLine("FTP Listener Thread started, using the following IPEndPoint:");
                     Console.WriteLine("  - IP address  = {0}", this.ServerIP);
-                    Console.WriteLine("  - Port number = {0}", ProtocolSettings.FileProtocolPort);
+                    Console.WriteLine("  - Port number = {0}", port);
                     Console.WriteLine("Waiting for file upload requests...");
                     Console.WriteLine("-------------------------------------------------------------------------------");
                 }
 
                 ftpSocket.Start();
 
-                while (true)
-                {
+//                while (true)
+//                {
                     Guid senderId;
                     Guid targetId;
                     string fileInfo;  // Name, size, time, and hash.
@@ -133,8 +133,14 @@ namespace ChatClassLibrary
                     {
                         Console.WriteLine("Error occurred while receiving file.");
                     }
-                }
+//                }
+                ftpSocket.Stop();
 
+                lock (this._lock)
+                {
+                    Console.WriteLine("FTP Listener Thread stopped");
+                    Console.WriteLine("-------------------------------------------------------------------------------");
+                }
             });
             ftpThread.Name = "Server FTP Listener Thread";
             ftpThread.Start();
@@ -150,7 +156,15 @@ namespace ChatClassLibrary
 
             string[] fileEntries = Directory.GetFiles(dir);
             foreach (var file in fileEntries)
-            {
+            {   // Must not include the currently uploading files.
+                try
+                {
+                    using (new FileStream(file, FileMode.Open)) {}
+                }
+                catch
+                {   // Probably currently being uploaded.
+                    continue;
+                }
                 FileInfo info = new FileInfo(file);
                 sb.Append(info.Name).AppendLine();
                 sb.Append(info.Length).AppendLine();
@@ -192,7 +206,7 @@ namespace ChatClassLibrary
                 SenderId = ProtocolSettings.NullId,
             };
 
-            this.StartFTPListener();
+//            this.StartFTPListener(ProtocolSettings.FileProtocolPort);
             this.ServerSocket.Start();
 
             lock (_lock)
@@ -257,6 +271,7 @@ namespace ChatClassLibrary
                 handler.PrivateMessageReceived += Handler_PrivateMessageReceived;
                 handler.FileRemoveRequestReceived += Handler_FileRemoveRequestReceived;
                 handler.FileDownloadRequestReceived += Handler_FileDownloadRequestReceived;
+                handler.FileUploadRequestReceived += Handler_FileUploadRequestReceived;
                 handler.ClientRequestCreateChatroom += Handler_ClientRequestCreateChatroom;
 
                 this.ClientHandlerTable.Add(clientId, handler);
@@ -267,6 +282,27 @@ namespace ChatClassLibrary
                 //SendFullChatroomList(this.ClientHandlerTable.Values);
                 SendFullClientAndChatroomList();
             }
+        }
+
+        private void Handler_FileUploadRequestReceived(object sender, MessageEventArgs e)
+        {
+            // Create new FTP listener thread and send its port back to the client.
+
+            int port = Utility.FreeTcpPort();
+
+            StartFTPListener(port);
+            
+            Message message = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.FtpPortOpened,
+                SenderId = e.Message.TargetId,
+                TargetId = e.Message.SenderId,
+                Text = port.ToString()
+            };
+
+            ClientHandler senderClient = ClientHandlerTable[e.Message.SenderId];
+            senderClient.SendMessage(message);
         }
 
         private void Handler_ClientRequestCreateChatroom(object sender, MessageEventArgs e)

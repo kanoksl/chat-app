@@ -231,7 +231,8 @@ namespace ChatClassLibrary
             "Jonah",
             "Ceola",
             "Estrella",
-            "Tracy"
+            "Tracy",
+            "Lolicon"
         };
 
         public static string GetRandomName()

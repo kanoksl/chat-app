@@ -196,6 +196,25 @@ namespace ChatClassLibrary
             }
         }
 
+        public void SendFileUploadRequest(Guid roomId)
+        {
+            Message request = new Message
+            {
+                Type = MessageType.Control,
+                ControlInfo = ControlInfo.RequestFileUpload,
+                SenderId = this.ClientId,
+                TargetId = roomId
+            };
+            try
+            {   // Convert message to bytes and send on a stream.
+                ChatProtocol.SendMessage(request, this.NetworkStream);
+            }
+            catch
+            {
+                this.OnMessageSendingFailed(new MessageEventArgs(request));
+            }
+        }
+
         private CancellationTokenSource _receiveCTS;
 
         public async void BeginReceive()
@@ -226,6 +245,8 @@ namespace ChatClassLibrary
                             this.OnFileAvailable(new MessageEventArgs(message));
                         else if (message.ControlInfo == ControlInfo.ListOfFiles)
                             this.OnFileListReceived(new MessageEventArgs(message));
+                        else if (message.ControlInfo == ControlInfo.FtpPortOpened)
+                            this.OnReadyToUploadFile(new MessageEventArgs(message));
                         else
                             this.OnMessageReceived(new MessageEventArgs(message));
                     }
@@ -403,6 +424,7 @@ namespace ChatClassLibrary
 
         public event EventHandler<MessageEventArgs> FileAvailable;
         public event EventHandler<MessageEventArgs> FileListReceived;
+        public event EventHandler<MessageEventArgs> ReadyToUploadFile;
 
         public event EventHandler KnownClientsUpdated;
         public event EventHandler KnownChatroomsUpdated;
@@ -430,6 +452,8 @@ namespace ChatClassLibrary
             => FileAvailable?.Invoke(this, e);
         protected virtual void OnFileListReceived(MessageEventArgs e)
             => FileListReceived?.Invoke(this, e);
+        protected virtual void OnReadyToUploadFile(MessageEventArgs e)
+                => ReadyToUploadFile?.Invoke(this, e);
 
         protected virtual void OnKnownClientsUpdated(EventArgs e)
             => KnownClientsUpdated?.Invoke(this, e);

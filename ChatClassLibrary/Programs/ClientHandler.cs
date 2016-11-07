@@ -50,6 +50,8 @@ namespace ChatClassLibrary
             }
         }
 
+        
+
         /// <summary>
         /// Start receiving messages from the handled client.
         /// </summary>
@@ -102,6 +104,11 @@ namespace ChatClassLibrary
                         this.OnFileDownloadRequestReceived(new MessageEventArgs(message));
                         continue;
                     }
+                    else if (message.ControlInfo == ControlInfo.RequestFileUpload)
+                    {
+                        this.OnFileUploadRequestReceived(new MessageEventArgs(message));
+                        continue;
+                    }
                     else if (message.ControlInfo == ControlInfo.RequestCreateChatroom)
                     {
                         this.OnClientRequestCreateChatroom(new MessageEventArgs(message));
@@ -131,6 +138,7 @@ namespace ChatClassLibrary
         public event EventHandler<MessageEventArgs> MessageReceivingingFailed;
         public event EventHandler<MessageEventArgs> PrivateMessageReceived;
 
+        public event EventHandler<MessageEventArgs> FileUploadRequestReceived;
         public event EventHandler<MessageEventArgs> FileDownloadRequestReceived;
         public event EventHandler<MessageEventArgs> FileRemoveRequestReceived;
 
@@ -151,6 +159,8 @@ namespace ChatClassLibrary
         protected virtual void OnPrivateMessageReceived(MessageEventArgs e)
                 => PrivateMessageReceived?.Invoke(this, e);
 
+        protected virtual void OnFileUploadRequestReceived(MessageEventArgs e)
+                => FileUploadRequestReceived?.Invoke(this, e);
         protected virtual void OnFileDownloadRequestReceived(MessageEventArgs e)
                 => FileDownloadRequestReceived?.Invoke(this, e);
         protected virtual void OnFileRemoveRequestReceived(MessageEventArgs e)

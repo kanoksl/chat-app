@@ -200,51 +200,59 @@ namespace ChatClientWPF
 
         private void btnUpload_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentlyUploading)
-            {   // Cancel the upload.
-                this._ftpThread.Abort();
-                _currentlyUploading = false;
-                _UpdateFileUploaderGUI(false);
-                return;
-            }
+            ClientService.SendFileUploadRequest(this.ChatId);
+        }
 
-            if (!File.Exists(tbxFilePath.Text.Trim()))
+        public void BeginUpload(int receiverPort)
+        {
+            this.Dispatcher.Invoke(() =>
             {
-                MessageBox.Show("Local file not found: " + tbxFilePath.Text.Trim(), "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                if (_currentlyUploading)
+                {   // Cancel the upload.
+                    this._ftpThread.Abort();
+                    _currentlyUploading = false;
+                    _UpdateFileUploaderGUI(false);
+                    return;
+                }
 
-            var progressReporter = new Progress<double>();
-            progressReporter.ProgressChanged += (s, progress) =>
-            {
-                pgbFileUpload.Value = (int) progress;
-            };
+                if (!File.Exists(tbxFilePath.Text.Trim()))
+                {
+                    MessageBox.Show("Local file not found: " + tbxFilePath.Text.Trim(), "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            string filePath = tbxFilePath.Text.Trim();
-            IPEndPoint serverEP = new IPEndPoint(
-                ClientService.ServerEndPoint.Address,
-                ProtocolSettings.FileProtocolPort);
+                var progressReporter = new Progress<double>();
+                progressReporter.ProgressChanged += (s, progress) =>
+                {
+                    pgbFileUpload.Value = (int) progress;
+                };
 
-            Thread ftpThread = new Thread(() =>
-            {
-                _currentlyUploading = true;
-                _UpdateFileUploaderGUI();
+                string filePath = tbxFilePath.Text.Trim();
+                IPEndPoint serverEP = new IPEndPoint(
+                    ClientService.ServerEndPoint.Address,
+                    receiverPort);
 
-                string log;
-                bool success = FileProtocol.SendFile(filePath, serverEP,
-                    ClientService.ClientId, this.ChatId, out log, progressReporter);
+                Thread ftpThread = new Thread(() =>
+                {
+                    _currentlyUploading = true;
+                    _UpdateFileUploaderGUI();
 
-                _currentlyUploading = false;
-                _UpdateFileUploaderGUI(success);
+                    string log;
+                    bool success = FileProtocol.SendFile(filePath, serverEP,
+                        ClientService.ClientId, this.ChatId, out log, progressReporter);
 
-                if (success)
-                    MessageBox.Show("The file has finished uploading.", "File Upload", MessageBoxButton.OK, MessageBoxImage.Information);
-                else
-                    MessageBox.Show(log, "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _currentlyUploading = false;
+                    _UpdateFileUploaderGUI(success);
+
+                    if (success)
+                        MessageBox.Show("The file has finished uploading.", "File Upload", MessageBoxButton.OK, MessageBoxImage.Information);
+                    else
+                        MessageBox.Show(log, "File Upload", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
+                this._ftpThread = ftpThread;
+                ftpThread.Name = "FTP Upload Thread";
+                ftpThread.Start();
             });
-            this._ftpThread = ftpThread;
-            ftpThread.Name = "FTP Upload Thread";
-            ftpThread.Start();
         }
 
         private ObservableCollection<FileListLine> _fileList = new ObservableCollection<FileListLine>();
@@ -320,6 +328,7 @@ namespace ChatClientWPF
             }
 
             IPAddress addr = Utility.GetIPv4Address();
+//            IPAddress addr = IPAddress.Any;  // CANNOT USE THIS
             int port = Utility.FreeTcpPort();
             TcpListener ftpSocket = new TcpListener(addr, port);
 
@@ -334,29 +343,42 @@ namespace ChatClientWPF
                 Console.WriteLine("Started FTP Download Listener Thread");
                 ftpSocket.Start();
 
-                while (true)
+//                while (true)
+//                {
+                Guid senderId;
+                Guid targetId;
+                string fileInfo; // Name, size, time, and hash.
+                bool received;
+                try
                 {
-                    Guid senderId;
-                    Guid targetId;
-                    string fileInfo;  // Name, size, time, and hash.
-                    bool received = FileProtocol.ReceiveFile(ftpSocket,
-                        out senderId, out targetId, out fileInfo, savePath, progressReporter);
-                    if (received)
-                    {
-                        Console.WriteLine("File Transfer Finished.");
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox.Show("Download finished.", "File Download", MessageBoxButton.OK, MessageBoxImage.Information);
-                            pgbFileDownload.Value = pgbFileDownload.Maximum;
-                            lblFileDownload.Text = "Download finished: " + savePath;
-                        });
-                        break;
-                    }
-                    else
-                    {
-                        MessageBox.Show("Error occured while downloading. Please try again.", "File Download", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    received = FileProtocol.ReceiveFile(ftpSocket, out senderId, out targetId, out fileInfo);
                 }
+                catch
+                {
+                    received = false;
+                    fileInfo = "";
+                    senderId = Guid.Empty;
+                    targetId = Guid.Empty;
+                }
+
+                if (received)
+                {
+                    Console.WriteLine("File Transfer Finished.");
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show("Download finished.", "File Download",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        pgbFileDownload.Value = pgbFileDownload.Maximum;
+                        lblFileDownload.Text = "Download finished: " + savePath;
+                    });
+//                        break;
+                }
+                else
+                {
+                    MessageBox.Show("Error occured while downloading. Please try again.", "File Download",
+                                    MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+//                }
                 ftpSocket.Stop();
             });
             ftpThread.Name = "FTP Download Listener Thread";

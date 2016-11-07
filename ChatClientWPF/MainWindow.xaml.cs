@@ -96,6 +96,7 @@ namespace ChatClientWPF
 
                 ClientService.FileAvailable += ClientService_FileAvailable;
                 ClientService.FileListReceived += ClientService_FileListReceived;
+                ClientService.ReadyToUploadFile += ClientService_ReadyToUploadFile;
 
                 ClientService.KnownChatroomsUpdated += ClientService_KnownChatroomsUpdated;
                 ClientService.KnownClientsUpdated += ClientService_KnownClientsUpdated;
@@ -109,6 +110,14 @@ namespace ChatClientWPF
             {   // Invalid IP address.
                 ClientService_ConnectionFailed(this, null);
             }
+        }
+
+        private void ClientService_ReadyToUploadFile(object sender, MessageEventArgs e)
+        {
+            Guid roomId = e.Message.SenderId;
+            int port = int.Parse(e.Message.Text);
+            if (ChatWindows.ContainsKey(roomId))
+                ChatWindows[roomId].BeginUpload(port);
         }
 
         private void ClientService_FileListReceived(object sender, MessageEventArgs e)
@@ -189,6 +198,7 @@ namespace ChatClientWPF
 
             ClientService.FileAvailable -= ClientService_FileAvailable;
             ClientService.FileListReceived -= ClientService_FileListReceived;
+            ClientService.ReadyToUploadFile -= ClientService_ReadyToUploadFile;
 
             ClientService.KnownChatroomsUpdated -= ClientService_KnownChatroomsUpdated;
             ClientService.KnownClientsUpdated -= ClientService_KnownClientsUpdated;

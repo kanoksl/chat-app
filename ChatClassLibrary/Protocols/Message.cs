@@ -35,6 +35,7 @@ namespace ChatClassLibrary.Protocols
         RequestFileDownload,      // The client wants to download a file from server.
         RequestFileRemove,        // The client wants to delete a file from server.
         FileAvailable,            // A file has been uploaded. Message contains file info.
+        FtpPortOpened,            // Tell the uploader to connect to this port.
         
         ListOfClients,            // Message containing a list of clients in a chatroom.
         ListOfChatrooms,          // Message containing a list of chatrooms in the server.
