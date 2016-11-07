@@ -351,7 +351,8 @@ namespace ChatClientWPF
                 bool received;
                 try
                 {
-                    received = FileProtocol.ReceiveFile(ftpSocket, out senderId, out targetId, out fileInfo);
+                    received = FileProtocol.ReceiveFile(ftpSocket,
+                        out senderId, out targetId, out fileInfo, savePath, progressReporter);
                 }
                 catch
                 {
@@ -366,10 +367,10 @@ namespace ChatClientWPF
                     Console.WriteLine("File Transfer Finished.");
                     this.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show("Download finished.", "File Download",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
                         pgbFileDownload.Value = pgbFileDownload.Maximum;
                         lblFileDownload.Text = "Download finished: " + savePath;
+                        MessageBox.Show("Download finished.", "File Download",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
                     });
 //                        break;
                 }
